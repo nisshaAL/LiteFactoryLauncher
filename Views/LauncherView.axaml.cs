@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 
 namespace LiteFactoryLauncher.Views;
 
@@ -17,6 +18,7 @@ public partial class LauncherView : UserControl
     private const string InstallingButtonText = "\u0423\u0421\u0422\u0410\u041d\u041e\u0412\u041a\u0410...";
     private const string UpdateButtonText = "\u041e\u0411\u041d\u041e\u0412\u0418\u0422\u042c";
     private const string PlayButtonText = "\u0418\u0413\u0420\u0410\u0422\u042c";
+    private const string PreparingButtonText = "\u041f\u041e\u0414\u0413\u041e\u0422\u041e\u0412\u041a\u0410...";
 
     private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
@@ -25,15 +27,18 @@ public partial class LauncherView : UserControl
     private readonly ManagedJavaService _managedJavaService = new();
     private readonly MinecraftRuntimeService _minecraftRuntimeService = new();
     private readonly ForgeRuntimeService _forgeRuntimeService = new();
+    private readonly GamePreparationService _preparationService = new();
     private ModpackManifest _manifest;
     private GameRuntimeStatus? _runtimeStatus;
     private LauncherState _state;
     private bool _isInstallRunning;
+    private bool _isPreparationRunning;
     private bool _isJavaInstallRunning;
     private bool? _minecraftRuntimeReady;
     private bool _isMinecraftInstallRunning;
     private bool? _forgeRuntimeReady;
     private bool _isForgeInstallRunning;
+    private CancellationTokenSource? _preparationCancellation;
 
     public LauncherView()
     {
@@ -47,18 +52,12 @@ public partial class LauncherView : UserControl
 
     private async void PlayButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_state == LauncherState.Installed)
-        {
-            LaunchGame();
-            return;
-        }
-
-        if (_isInstallRunning)
+        if (_isPreparationRunning)
         {
             return;
         }
 
-        await InstallOrUpdateFromInternetAsync();
+        await PrepareGameAsync();
     }
 
     private async System.Threading.Tasks.Task CheckRemoteManifestAsync()
@@ -170,6 +169,77 @@ public partial class LauncherView : UserControl
         finally
         {
             _isInstallRunning = false;
+        }
+    }
+
+    private async System.Threading.Tasks.Task PrepareGameAsync()
+    {
+        _isPreparationRunning = true;
+        _isInstallRunning = true;
+        _preparationCancellation = new CancellationTokenSource();
+        SetTechnicalActionsEnabled(false);
+        SetState(LauncherState.Preparing, "Preparing Light Factory...");
+        InstallProgress.Value = 0;
+        ToolTip.SetTip(LaunchStatus, null);
+
+        try
+        {
+            var profile = new GameProfile
+            {
+                Id = "light-factory",
+                DisplayName = "Light Factory",
+                MinecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
+                ForgeVersion = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion,
+                Manifest = _manifest
+            };
+
+            JavaStatusText.Text = "Waiting...";
+            JavaStatusText.Foreground = Brushes.LightGreen;
+            MinecraftVersionText.Text = $"{profile.MinecraftVersion} - Waiting";
+            ForgeVersionText.Text = $"{profile.ForgeVersion} - Waiting";
+
+            var progress = new Progress<GamePreparationStatus>(status =>
+            {
+                InstallProgress.Value = Math.Clamp(status.OverallProgress, 0, 100);
+                ShowStatus(status.StatusText, status.Phase == GamePreparationPhase.Failed ? Brushes.IndianRed : Brushes.LightGreen);
+                JavaStatusText.Text = FormatComponentStatus("Java 8", status.JavaStatus);
+                JavaStatusText.Foreground = status.JavaStatus.Contains("Required", StringComparison.OrdinalIgnoreCase)
+                    ? Brushes.Gold
+                    : Brushes.LightGreen;
+                MinecraftVersionText.Text = FormatComponentStatus(profile.MinecraftVersion, status.MinecraftStatus);
+                ForgeVersionText.Text = FormatComponentStatus(profile.ForgeVersion, status.ForgeStatus);
+
+                if (!string.IsNullOrWhiteSpace(status.ModpackStatus))
+                {
+                    LaunchStatus.Text = $"{status.StatusText} Light Factory: {status.ModpackStatus}";
+                }
+            });
+
+            var result = await _preparationService.PrepareAsync(profile, progress, _preparationCancellation.Token);
+            if (result.Manifest != null)
+            {
+                _manifest = result.Manifest;
+            }
+
+            if (!result.Success)
+            {
+                SetState(LauncherState.Error, $"Preparation failed: {result.ErrorMessage ?? "Unknown error."}");
+                ToolTip.SetTip(LaunchStatus, result.DiagnosticText ?? result.ErrorMessage);
+                await LoadRuntimeStatusAsync();
+                return;
+            }
+
+            ToolTip.SetTip(LaunchStatus, null);
+            await LoadRuntimeStatusAsync();
+            RefreshLauncherState("Ready to launch.");
+        }
+        finally
+        {
+            _isPreparationRunning = false;
+            _isInstallRunning = false;
+            _preparationCancellation.Dispose();
+            _preparationCancellation = null;
+            SetTechnicalActionsEnabled(true);
         }
     }
 
@@ -314,7 +384,7 @@ public partial class LauncherView : UserControl
 
     private async void InstallJavaButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_isJavaInstallRunning)
+        if (_isPreparationRunning || _isJavaInstallRunning)
         {
             return;
         }
@@ -361,7 +431,7 @@ public partial class LauncherView : UserControl
 
     private async void InstallMinecraftButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_isMinecraftInstallRunning)
+        if (_isPreparationRunning || _isMinecraftInstallRunning)
         {
             return;
         }
@@ -411,7 +481,7 @@ public partial class LauncherView : UserControl
 
     private async void InstallForgeButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_isForgeInstallRunning)
+        if (_isPreparationRunning || _isForgeInstallRunning)
         {
             return;
         }
@@ -514,17 +584,18 @@ public partial class LauncherView : UserControl
         MainActionButton.IsEnabled =
             state != LauncherState.Downloading &&
             state != LauncherState.Verifying &&
-            state != LauncherState.Installing;
+            state != LauncherState.Installing &&
+            state != LauncherState.Preparing;
 
         switch (state)
         {
             case LauncherState.NotInstalled:
-                MainActionButton.Content = InstallButtonText;
+                MainActionButton.Content = PlayButtonText;
                 InstallProgress.Value = 0;
                 ShowStatus(status, Brushes.IndianRed);
                 break;
             case LauncherState.UpdateAvailable:
-                MainActionButton.Content = UpdateButtonText;
+                MainActionButton.Content = PlayButtonText;
                 ShowStatus(status, Brushes.Gold);
                 break;
             case LauncherState.Downloading:
@@ -539,16 +610,34 @@ public partial class LauncherView : UserControl
                 MainActionButton.Content = InstallingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
                 break;
+            case LauncherState.Preparing:
+                MainActionButton.Content = PreparingButtonText;
+                ShowStatus(status, Brushes.LightGreen);
+                break;
             case LauncherState.Installed:
                 MainActionButton.Content = PlayButtonText;
                 InstallProgress.Value = 100;
                 ShowStatus(status, Brushes.LightGreen);
                 break;
             case LauncherState.Error:
-                MainActionButton.Content = InstallButtonText;
+                MainActionButton.Content = PlayButtonText;
                 ShowStatus(status, Brushes.IndianRed);
                 break;
         }
+    }
+
+    private void SetTechnicalActionsEnabled(bool enabled)
+    {
+        InstallJavaButton.IsEnabled = enabled;
+        InstallMinecraftButton.IsEnabled = enabled;
+        InstallForgeButton.IsEnabled = enabled;
+    }
+
+    private static string FormatComponentStatus(string label, string status)
+    {
+        return string.IsNullOrWhiteSpace(status) || status == "Waiting..."
+            ? $"{label} - Waiting"
+            : $"{label} - {status}";
     }
 
     private void ShowLaunchStatus(string message, bool success)
@@ -644,6 +733,7 @@ public partial class LauncherView : UserControl
         Downloading,
         Verifying,
         Installing,
+        Preparing,
         Installed,
         Error
     }
