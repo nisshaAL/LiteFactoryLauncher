@@ -163,6 +163,23 @@
                                    Foreground="White"
                                    Margin="0,2,0,8"/>
 
+                        <Button Name="InstallForgeButton"
+                                Content="INSTALL FORGE"
+                                Height="30"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                IsVisible="False"
+                                Margin="0,0,0,8"
+                                Click="InstallForgeButton_Click"/>
+
+                        <ProgressBar Name="ForgeInstallProgress"
+                                     Value="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     IsVisible="False"
+                                     Margin="0,0,0,10"/>
+
                         <TextBlock Text="Java"
                                    FontSize="11"
                                    Foreground="#666B75"/>

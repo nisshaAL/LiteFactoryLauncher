@@ -24,12 +24,16 @@ public partial class LauncherView : UserControl
     private readonly GameRuntimeService _runtimeService = new();
     private readonly ManagedJavaService _managedJavaService = new();
     private readonly MinecraftRuntimeService _minecraftRuntimeService = new();
+    private readonly ForgeRuntimeService _forgeRuntimeService = new();
     private ModpackManifest _manifest;
+    private GameRuntimeStatus? _runtimeStatus;
     private LauncherState _state;
     private bool _isInstallRunning;
     private bool _isJavaInstallRunning;
     private bool? _minecraftRuntimeReady;
     private bool _isMinecraftInstallRunning;
+    private bool? _forgeRuntimeReady;
+    private bool _isForgeInstallRunning;
 
     public LauncherView()
     {
@@ -219,7 +223,7 @@ public partial class LauncherView : UserControl
         InstalledVersionText.Text = installedVersion ?? "-";
         LatestVersionText.Text = string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion;
         UpdateMinecraftRuntimeText();
-        ForgeVersionText.Text = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
+        UpdateForgeRuntimeText();
 
         if (string.IsNullOrWhiteSpace(installedVersion) || !installationValid)
         {
@@ -262,15 +266,21 @@ public partial class LauncherView : UserControl
         InstallMinecraftButton.IsVisible = false;
         MinecraftInstallProgress.IsVisible = false;
         MinecraftInstallProgress.Value = 0;
+        InstallForgeButton.IsVisible = false;
+        ForgeInstallProgress.IsVisible = false;
+        ForgeInstallProgress.Value = 0;
 
         var status = await _runtimeService.GetRuntimeStatusAsync(
             string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
             string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion);
 
+        _runtimeStatus = status;
         _minecraftRuntimeReady = status.MinecraftInstalled;
         UpdateMinecraftRuntimeText();
         InstallMinecraftButton.IsVisible = !status.MinecraftInstalled;
-        ForgeVersionText.Text = status.ForgeVersion;
+        _forgeRuntimeReady = status.ForgeInstalled;
+        UpdateForgeRuntimeText();
+        InstallForgeButton.IsVisible = status.MinecraftInstalled && !status.ForgeInstalled;
 
         if (status.CompatibleJavaFound && status.CompatibleJava != null)
         {
@@ -399,6 +409,82 @@ public partial class LauncherView : UserControl
         }
     }
 
+    private async void InstallForgeButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_isForgeInstallRunning)
+        {
+            return;
+        }
+
+        var runtimeStatus = _runtimeStatus ?? await _runtimeService.GetRuntimeStatusAsync(
+            string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
+            string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion);
+
+        if (!runtimeStatus.CompatibleJavaFound || runtimeStatus.CompatibleJava == null)
+        {
+            ForgeVersionText.Text = "Java 8 required";
+            InstallForgeButton.IsVisible = true;
+            return;
+        }
+
+        if (!runtimeStatus.MinecraftInstalled)
+        {
+            ForgeVersionText.Text = "Minecraft required";
+            InstallForgeButton.IsVisible = true;
+            return;
+        }
+
+        _isForgeInstallRunning = true;
+        InstallForgeButton.IsEnabled = false;
+        ForgeInstallProgress.IsVisible = true;
+        ForgeInstallProgress.Value = 0;
+
+        try
+        {
+            var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+            var forgeVersion = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
+            ForgeVersionText.Text = $"{forgeVersion} - Installing";
+            ToolTip.SetTip(ForgeVersionText, null);
+
+            var progress = new Progress<double>(value =>
+            {
+                ForgeInstallProgress.Value = Math.Clamp(value, 0, 100);
+            });
+
+            var status = new Progress<string>(message =>
+            {
+                ForgeVersionText.Text = message;
+            });
+
+            var result = await _forgeRuntimeService.InstallAsync(
+                minecraftVersion,
+                forgeVersion,
+                runtimeStatus.CompatibleJava.Path,
+                progress,
+                status);
+
+            if (!result.Success)
+            {
+                _forgeRuntimeReady = false;
+                ForgeVersionText.Text = result.ErrorMessage ?? "Forge installation failed.";
+                ToolTip.SetTip(ForgeVersionText, result.DiagnosticText ?? result.ErrorMessage);
+                InstallForgeButton.IsVisible = true;
+                return;
+            }
+
+            _forgeRuntimeReady = true;
+            ToolTip.SetTip(ForgeVersionText, null);
+            UpdateForgeRuntimeText();
+            InstallForgeButton.IsVisible = false;
+            await LoadRuntimeStatusAsync();
+        }
+        finally
+        {
+            _isForgeInstallRunning = false;
+            InstallForgeButton.IsEnabled = true;
+        }
+    }
+
     private void UpdateMinecraftRuntimeText()
     {
         var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
@@ -407,6 +493,17 @@ public partial class LauncherView : UserControl
             true => $"{minecraftVersion} - Ready",
             false => $"{minecraftVersion} - Not installed",
             _ => minecraftVersion
+        };
+    }
+
+    private void UpdateForgeRuntimeText()
+    {
+        var forgeVersion = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
+        ForgeVersionText.Text = _forgeRuntimeReady switch
+        {
+            true => $"{forgeVersion} - Ready",
+            false => $"{forgeVersion} - Not installed",
+            _ => forgeVersion
         };
     }
 
