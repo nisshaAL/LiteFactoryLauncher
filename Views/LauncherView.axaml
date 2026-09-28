@@ -120,7 +120,7 @@
                                    FontSize="11"
                                    Foreground="#666B75"/>
 
-                        <TextBlock Text="● Готово к запуску"
+                        <TextBlock Name="LaunchStatus" Text="● Готово к запуску"
                                    FontSize="14"
                                    Foreground="#62E87C"
                                    Margin="0,4,0,0"/>
