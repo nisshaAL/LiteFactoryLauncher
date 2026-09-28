@@ -28,6 +28,7 @@ public partial class LauncherView : UserControl
     private readonly MinecraftRuntimeService _minecraftRuntimeService = new();
     private readonly ForgeRuntimeService _forgeRuntimeService = new();
     private readonly GamePreparationService _preparationService = new();
+    private readonly GameLaunchService _launchService = new();
     private ModpackManifest _manifest;
     private GameRuntimeStatus? _runtimeStatus;
     private LauncherState _state;
@@ -232,6 +233,7 @@ public partial class LauncherView : UserControl
             ToolTip.SetTip(LaunchStatus, null);
             await LoadRuntimeStatusAsync();
             RefreshLauncherState("Ready to launch.");
+            await BuildLaunchPlanDiagnosticAsync(profile);
         }
         finally
         {
@@ -240,6 +242,32 @@ public partial class LauncherView : UserControl
             _preparationCancellation.Dispose();
             _preparationCancellation = null;
             SetTechnicalActionsEnabled(true);
+        }
+    }
+
+    private async System.Threading.Tasks.Task BuildLaunchPlanDiagnosticAsync(GameProfile profile)
+    {
+        var result = await _launchService.BuildLaunchPlanAsync(profile, new GameLaunchOptions());
+        if (result.Plan == null)
+        {
+            ShowStatus(result.ErrorMessage ?? "Launch plan could not be built.", Brushes.IndianRed);
+            return;
+        }
+
+        switch (result.State)
+        {
+            case GameLaunchValidationState.Ready:
+                ShowStatus("Launch plan ready.", Brushes.LightGreen);
+                ToolTip.SetTip(LaunchStatus, $"Main class: {result.Plan.MainClass}");
+                break;
+            case GameLaunchValidationState.AuthenticationRequired:
+                ShowStatus("Runtime ready - authentication required.", Brushes.Gold);
+                ToolTip.SetTip(LaunchStatus, $"Launch plan built. Missing authentication: {string.Join(", ", result.Plan.MissingAuthenticationFields)}");
+                break;
+            default:
+                ShowStatus(result.ErrorMessage ?? "Launch plan validation failed.", Brushes.IndianRed);
+                ToolTip.SetTip(LaunchStatus, string.Join(Environment.NewLine, result.Plan.ValidationErrors));
+                break;
         }
     }
 
