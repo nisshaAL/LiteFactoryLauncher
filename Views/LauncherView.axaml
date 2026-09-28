@@ -117,23 +117,6 @@
                                    Foreground="White"
                                    Margin="0,2,0,8"/>
 
-                        <Button Name="InstallJavaButton"
-                                Content="INSTALL JAVA"
-                                Height="30"
-                                FontSize="11"
-                                FontWeight="Bold"
-                                HorizontalContentAlignment="Center"
-                                IsVisible="False"
-                                Margin="0,0,0,8"
-                                Click="InstallJavaButton_Click"/>
-
-                        <ProgressBar Name="JavaInstallProgress"
-                                     Value="0"
-                                     Maximum="100"
-                                     Height="4"
-                                     IsVisible="False"
-                                     Margin="0,0,0,10"/>
-
                         <TextBlock Text="Latest version"
                                    FontSize="11"
                                    Foreground="#666B75"/>
@@ -152,6 +135,23 @@
                                    FontSize="14"
                                    Foreground="White"
                                    Margin="0,2,0,8"/>
+
+                        <Button Name="InstallMinecraftButton"
+                                Content="INSTALL MINECRAFT"
+                                Height="30"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                IsVisible="False"
+                                Margin="0,0,0,8"
+                                Click="InstallMinecraftButton_Click"/>
+
+                        <ProgressBar Name="MinecraftInstallProgress"
+                                     Value="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     IsVisible="False"
+                                     Margin="0,0,0,10"/>
 
                         <TextBlock Text="Forge"
                                    FontSize="11"
@@ -173,6 +173,22 @@
                                    Foreground="#A1A5AE"
                                    TextWrapping="Wrap"
                                    Margin="0,2,0,10"/>
+                        <Button Name="InstallJavaButton"
+                                Content="INSTALL JAVA"
+                                Height="30"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                HorizontalContentAlignment="Center"
+                                IsVisible="False"
+                                Margin="0,0,0,8"
+                                Click="InstallJavaButton_Click"/>
+
+                        <ProgressBar Name="JavaInstallProgress"
+                                     Value="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     IsVisible="False"
+                                     Margin="0,0,0,10"/>
 
                         <TextBlock Text="Статус"
                                    FontSize="11"

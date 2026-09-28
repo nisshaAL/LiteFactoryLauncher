@@ -23,10 +23,13 @@ public partial class LauncherView : UserControl
     private readonly ModpackInstaller _installer = new();
     private readonly GameRuntimeService _runtimeService = new();
     private readonly ManagedJavaService _managedJavaService = new();
+    private readonly MinecraftRuntimeService _minecraftRuntimeService = new();
     private ModpackManifest _manifest;
     private LauncherState _state;
     private bool _isInstallRunning;
     private bool _isJavaInstallRunning;
+    private bool? _minecraftRuntimeReady;
+    private bool _isMinecraftInstallRunning;
 
     public LauncherView()
     {
@@ -215,7 +218,7 @@ public partial class LauncherView : UserControl
         var installationValid = IsInstallationValid();
         InstalledVersionText.Text = installedVersion ?? "-";
         LatestVersionText.Text = string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion;
-        MinecraftVersionText.Text = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+        UpdateMinecraftRuntimeText();
         ForgeVersionText.Text = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
 
         if (string.IsNullOrWhiteSpace(installedVersion) || !installationValid)
@@ -256,12 +259,17 @@ public partial class LauncherView : UserControl
         InstallJavaButton.IsVisible = false;
         JavaInstallProgress.IsVisible = false;
         JavaInstallProgress.Value = 0;
+        InstallMinecraftButton.IsVisible = false;
+        MinecraftInstallProgress.IsVisible = false;
+        MinecraftInstallProgress.Value = 0;
 
         var status = await _runtimeService.GetRuntimeStatusAsync(
             string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
             string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion);
 
-        MinecraftVersionText.Text = status.MinecraftVersion;
+        _minecraftRuntimeReady = status.MinecraftInstalled;
+        UpdateMinecraftRuntimeText();
+        InstallMinecraftButton.IsVisible = !status.MinecraftInstalled;
         ForgeVersionText.Text = status.ForgeVersion;
 
         if (status.CompatibleJavaFound && status.CompatibleJava != null)
@@ -339,6 +347,67 @@ public partial class LauncherView : UserControl
             _isJavaInstallRunning = false;
             InstallJavaButton.IsEnabled = true;
         }
+    }
+
+    private async void InstallMinecraftButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_isMinecraftInstallRunning)
+        {
+            return;
+        }
+
+        _isMinecraftInstallRunning = true;
+        InstallMinecraftButton.IsEnabled = false;
+        MinecraftInstallProgress.IsVisible = true;
+        MinecraftInstallProgress.Value = 0;
+
+        try
+        {
+            var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+            MinecraftVersionText.Text = $"{minecraftVersion} - Installing";
+            ToolTip.SetTip(MinecraftVersionText, null);
+
+            var progress = new Progress<double>(value =>
+            {
+                MinecraftInstallProgress.Value = Math.Clamp(value, 0, 100);
+            });
+
+            var status = new Progress<string>(message =>
+            {
+                MinecraftVersionText.Text = message;
+            });
+
+            var result = await _minecraftRuntimeService.InstallAsync(minecraftVersion, progress, status);
+            if (!result.Success)
+            {
+                _minecraftRuntimeReady = false;
+                MinecraftVersionText.Text = result.ErrorMessage ?? "Minecraft installation failed.";
+                ToolTip.SetTip(MinecraftVersionText, result.DiagnosticText ?? result.ErrorMessage);
+                InstallMinecraftButton.IsVisible = true;
+                return;
+            }
+
+            _minecraftRuntimeReady = true;
+            ToolTip.SetTip(MinecraftVersionText, null);
+            UpdateMinecraftRuntimeText();
+            InstallMinecraftButton.IsVisible = false;
+        }
+        finally
+        {
+            _isMinecraftInstallRunning = false;
+            InstallMinecraftButton.IsEnabled = true;
+        }
+    }
+
+    private void UpdateMinecraftRuntimeText()
+    {
+        var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+        MinecraftVersionText.Text = _minecraftRuntimeReady switch
+        {
+            true => $"{minecraftVersion} - Ready",
+            false => $"{minecraftVersion} - Not installed",
+            _ => minecraftVersion
+        };
     }
 
     private void SetState(LauncherState state, string status)

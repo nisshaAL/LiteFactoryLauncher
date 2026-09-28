@@ -8,6 +8,7 @@ public sealed class GameRuntimeService
 {
     private readonly JavaDetectionService _javaDetectionService = new();
     private readonly ManagedJavaService _managedJavaService = new();
+    private readonly MinecraftRuntimeService _minecraftRuntimeService = new();
 
     public async Task<GameRuntimeStatus> GetRuntimeStatusAsync(string minecraftVersion, string forgeVersion)
     {
@@ -16,13 +17,14 @@ public sealed class GameRuntimeService
         var compatibleManagedJava = compatibleSystemJava == null
             ? await _managedJavaService.GetInstalledRuntimeAsync()
             : null;
+        var minecraftInstalled = await _minecraftRuntimeService.ValidateInstalledAsync(minecraftVersion);
 
         var status = new GameRuntimeStatus
         {
             MinecraftVersion = minecraftVersion,
             ForgeVersion = forgeVersion,
             CompatibleJava = compatibleSystemJava ?? compatibleManagedJava,
-            MinecraftInstalled = false,
+            MinecraftInstalled = minecraftInstalled,
             ForgeInstalled = false
         };
 
