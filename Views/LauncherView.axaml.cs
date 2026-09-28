@@ -21,6 +21,7 @@ public partial class LauncherView : UserControl
     private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
     private readonly ModpackInstaller _installer = new();
+    private readonly GameRuntimeService _runtimeService = new();
     private ModpackManifest _manifest;
     private LauncherState _state;
     private bool _isInstallRunning;
@@ -31,6 +32,7 @@ public partial class LauncherView : UserControl
 
         _manifest = LoadBundledManifest();
         RefreshLauncherState();
+        _ = LoadRuntimeStatusAsync();
         _ = CheckRemoteManifestAsync();
     }
 
@@ -211,6 +213,8 @@ public partial class LauncherView : UserControl
         var installationValid = IsInstallationValid();
         InstalledVersionText.Text = installedVersion ?? "-";
         LatestVersionText.Text = string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion;
+        MinecraftVersionText.Text = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+        ForgeVersionText.Text = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
 
         if (string.IsNullOrWhiteSpace(installedVersion) || !installationValid)
         {
@@ -240,6 +244,45 @@ public partial class LauncherView : UserControl
         return Directory.Exists(installDirectory) &&
                Directory.Exists(Path.Combine(installDirectory, "mods")) &&
                Directory.Exists(Path.Combine(installDirectory, "config"));
+    }
+
+    private async System.Threading.Tasks.Task LoadRuntimeStatusAsync()
+    {
+        JavaStatusText.Text = "Checking...";
+        JavaStatusText.Foreground = Brushes.LightGreen;
+        ToolTip.SetTip(JavaStatusText, null);
+
+        var status = await _runtimeService.GetRuntimeStatusAsync(
+            string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
+            string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion);
+
+        MinecraftVersionText.Text = status.MinecraftVersion;
+        ForgeVersionText.Text = status.ForgeVersion;
+
+        if (status.CompatibleJavaFound && status.CompatibleJava != null)
+        {
+            JavaStatusText.Text = "Java 8 detected";
+            JavaStatusText.Foreground = Brushes.LightGreen;
+            ToolTip.SetTip(JavaStatusText, status.CompatibleJava.Path);
+            return;
+        }
+
+        if (status.JavaFound)
+        {
+            var detectedJava = status.JavaRuntimes[0];
+            var version = string.IsNullOrWhiteSpace(detectedJava.Version)
+                ? "unknown version"
+                : $"Java {detectedJava.Version}";
+
+            JavaStatusText.Text = $"{version} detected; Java 8 not found";
+            JavaStatusText.Foreground = Brushes.Gold;
+            ToolTip.SetTip(JavaStatusText, detectedJava.Path);
+            return;
+        }
+
+        JavaStatusText.Text = "Not found";
+        JavaStatusText.Foreground = Brushes.IndianRed;
+        ToolTip.SetTip(JavaStatusText, null);
     }
 
     private void SetState(LauncherState state, string status)

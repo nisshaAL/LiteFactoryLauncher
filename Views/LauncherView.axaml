@@ -93,7 +93,7 @@
                 <Border Grid.Column="1"
                         Background="#17191E"
                         CornerRadius="8"
-                        Padding="25">
+                        Padding="22">
 
                     <StackPanel>
 
@@ -105,7 +105,7 @@
                         <TextBlock Text="LiteFactory"
                                    FontSize="14"
                                    Foreground="#8B909A"
-                                   Margin="0,8,0,30"/>
+                                   Margin="0,6,0,18"/>
 
                         <TextBlock Text="Установленная версия"
                                    FontSize="11"
@@ -113,9 +113,9 @@
 
                         <TextBlock Name="InstalledVersionText"
                                    Text="0.0.1"
-                                   FontSize="17"
+                                   FontSize="15"
                                    Foreground="White"
-                                   Margin="0,4,0,20"/>
+                                   Margin="0,2,0,10"/>
 
                         <TextBlock Text="Latest version"
                                    FontSize="11"
@@ -123,9 +123,39 @@
 
                         <TextBlock Name="LatestVersionText"
                                    Text="0.0.1"
-                                   FontSize="17"
+                                   FontSize="15"
                                    Foreground="White"
-                                   Margin="0,4,0,20"/>
+                                   Margin="0,2,0,10"/>
+                        <TextBlock Text="Minecraft"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Name="MinecraftVersionText"
+                                   Text="1.12.2"
+                                   FontSize="14"
+                                   Foreground="White"
+                                   Margin="0,2,0,8"/>
+
+                        <TextBlock Text="Forge"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Name="ForgeVersionText"
+                                   Text="14.23.5.2860"
+                                   FontSize="14"
+                                   Foreground="White"
+                                   Margin="0,2,0,8"/>
+
+                        <TextBlock Text="Java"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Name="JavaStatusText"
+                                   Text="Checking..."
+                                   FontSize="14"
+                                   Foreground="#A1A5AE"
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,10"/>
 
                         <TextBlock Text="Статус"
                                    FontSize="11"
@@ -134,7 +164,8 @@
                         <TextBlock Name="LaunchStatus" Text="● Готово к запуску"
                                    FontSize="14"
                                    Foreground="#62E87C"
-                                   Margin="0,4,0,0"/>
+                                   TextWrapping="Wrap"
+                                   Margin="0,2,0,0"/>
 
                     </StackPanel>
 
