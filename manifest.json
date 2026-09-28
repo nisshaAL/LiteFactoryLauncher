@@ -2,9 +2,9 @@
   "projectName": "Light Factory",
   "minecraftVersion": "1.12.2",
   "forgeVersion": "14.23.5.2860",
-  "packVersion": "0.1.0",
-  "archiveFile": "LightFactory-0.1.0.zip",
-  "downloadUrl": "https://github.com/nisshaAL/LiteFactoryLauncher/releases/download/v0.1.0/LightFactory-0.1.0.zip",
+  "packVersion": "0.1.1",
+  "archiveFile": "LightFactory-0.1.1.zip",
+  "downloadUrl": "https://github.com/nisshaAL/LiteFactoryLauncher/releases/download/v0.1.1/LightFactory-0.1.1.zip",
   "sha256": "3B5C8F68D33E1D7FE6474747CD5B935D489B5489D30F84D92BE44EE81A8F05FC",
   "launchTarget": "",
   "archiveSize": 0
