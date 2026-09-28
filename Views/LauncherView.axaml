@@ -1,0 +1,160 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LiteFactoryLauncher.Views.LauncherView">
+
+    <Grid Background="#101114"
+          RowDefinitions="90,*,110">
+
+        <!-- Верхняя панель -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="*,Auto"
+              Margin="45,0">
+
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="LITEFACTORY"
+                           FontSize="25"
+                           FontWeight="Bold"
+                           Foreground="White"/>
+
+                <TextBlock Text="LAUNCHER"
+                           FontSize="11"
+                           Foreground="#777B85"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="10">
+
+                <TextBlock Text="admin"
+                           Foreground="#DADCE2"
+                           VerticalAlignment="Center"/>
+
+                <Ellipse Width="9"
+                         Height="9"
+                         Fill="#62E87C"/>
+            </StackPanel>
+
+        </Grid>
+
+
+        <!-- Контент -->
+        <Grid Grid.Row="1"
+              Margin="45,20">
+
+            <Grid ColumnDefinitions="*,330">
+
+                <!-- Новости -->
+                <StackPanel Margin="0,0,50,0">
+
+                    <TextBlock Text="Последние новости"
+                               FontSize="26"
+                               FontWeight="Bold"
+                               Foreground="White"
+                               Margin="0,0,0,20"/>
+
+                    <Border Background="#17191E"
+                            CornerRadius="8"
+                            Padding="25">
+
+                        <StackPanel>
+
+                            <TextBlock Text="LiteFactory Launcher запущен!"
+                                       FontSize="18"
+                                       FontWeight="SemiBold"
+                                       Foreground="White"/>
+
+                            <TextBlock Text="28 сентября 2026"
+                                       FontSize="11"
+                                       Foreground="#626772"
+                                       Margin="0,5,0,18"/>
+
+                            <TextBlock Text="Это первый тестовый запуск нашего лаунчера. Скоро здесь будут появляться новости проекта и обновления сборки."
+                                       TextWrapping="Wrap"
+                                       FontSize="14"
+                                       Foreground="#A1A5AE"
+                                       LineHeight="22"/>
+
+                        </StackPanel>
+
+                    </Border>
+
+                </StackPanel>
+
+
+                <!-- Информация о сборке -->
+                <Border Grid.Column="1"
+                        Background="#17191E"
+                        CornerRadius="8"
+                        Padding="25">
+
+                    <StackPanel>
+
+                        <TextBlock Text="Сборка"
+                                   FontSize="22"
+                                   FontWeight="Bold"
+                                   Foreground="White"/>
+
+                        <TextBlock Text="LiteFactory"
+                                   FontSize="14"
+                                   Foreground="#8B909A"
+                                   Margin="0,8,0,30"/>
+
+                        <TextBlock Text="Установленная версия"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Text="0.0.1"
+                                   FontSize="17"
+                                   Foreground="White"
+                                   Margin="0,4,0,20"/>
+
+                        <TextBlock Text="Статус"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Text="● Готово к запуску"
+                                   FontSize="14"
+                                   Foreground="#62E87C"
+                                   Margin="0,4,0,0"/>
+
+                    </StackPanel>
+
+                </Border>
+
+            </Grid>
+
+        </Grid>
+
+
+        <!-- Нижняя панель -->
+        <Grid Grid.Row="2"
+              ColumnDefinitions="*,220"
+              Margin="45,20">
+
+            <StackPanel VerticalAlignment="Center">
+
+                <TextBlock Text="Версия 0.0.1"
+                           Foreground="#686D77"
+                           FontSize="12"/>
+
+                <ProgressBar Value="100"
+                             Maximum="100"
+                             Height="5"
+                             Margin="0,10,40,0"/>
+
+            </StackPanel>
+
+            <Button Grid.Column="1"
+                    Content="ИГРАТЬ"
+                    Height="55"
+                    FontSize="16"
+                    FontWeight="Bold"
+                    HorizontalContentAlignment="Center"
+                    VerticalAlignment="Center"/>
+
+        </Grid>
+
+    </Grid>
+
+</UserControl>
