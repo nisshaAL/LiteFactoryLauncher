@@ -9,7 +9,7 @@ build_property.AvaloniaNameGeneratorAttachDevTools = true
 build_property.AvaloniaUseCompiledBindingsByDefault = true
 build_property.AvaloniaMainPackageVersion = 12.1.3
 build_property.AvaloniaPreviewerNetCoreToolPath = C:\Users\Erwd\.nuget\packages\avalonia\12.1.3\buildTransitive\\..\tools\net8.0\designer\Avalonia.Designer.HostApp.dll
-build_property.AvaloniaResourcePaths = C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Assets\avalonia-logo.ico,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\App.axaml,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Views\LauncherView.axaml,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Views\MainWindow.axaml
+build_property.AvaloniaResourcePaths = C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Assets\avalonia-logo.ico,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\App.axaml,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Views\LauncherView.axaml,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Views\MainWindow.axaml,C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\Views\SettingsView.axaml
 build_property.MvvmToolkitEnableINotifyPropertyChangingSupport = true
 build_property._MvvmToolkitIsUsingWindowsRuntimePack = false
 build_property.CsWinRTComponent = 
@@ -40,4 +40,7 @@ build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
 
 [C:/Users/Erwd/Desktop/LiteFactoryLauncher/LiteFactoryLauncher/Views/MainWindow.axaml]
+build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml
+
+[C:/Users/Erwd/Desktop/LiteFactoryLauncher/LiteFactoryLauncher/Views/SettingsView.axaml]
 build_metadata.AdditionalFiles.SourceItemGroup = AvaloniaXaml

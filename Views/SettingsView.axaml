@@ -1,0 +1,80 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             x:Class="LiteFactoryLauncher.Views.SettingsView">
+
+    <Grid Background="#101114"
+          RowDefinitions="90,*">
+
+        <!-- Верх -->
+        <Grid Grid.Row="0"
+              ColumnDefinitions="Auto,*"
+              Margin="45,0">
+
+            <Button Content="←"
+                    Width="42"
+                    Height="42"
+                    FontSize="20"
+                    VerticalAlignment="Center"
+                    Click="BackButton_Click"/>
+
+            <StackPanel Grid.Column="1"
+                        VerticalAlignment="Center"
+                        Margin="20,0,0,0">
+
+                <TextBlock Text="НАСТРОЙКИ"
+                           FontSize="24"
+                           FontWeight="Bold"
+                           Foreground="White"/>
+
+                <TextBlock Text="LiteFactory Launcher"
+                           FontSize="12"
+                           Foreground="#777B85"/>
+
+            </StackPanel>
+
+        </Grid>
+
+        <!-- Настройки -->
+        <StackPanel Grid.Row="1"
+                    Width="650"
+                    HorizontalAlignment="Center"
+                    Margin="0,60,0,0">
+
+            <TextBlock Text="Путь к игре"
+                       FontSize="22"
+                       FontWeight="Bold"
+                       Foreground="White"/>
+
+            <TextBlock Text="Выберите .exe файл, который будет запускаться кнопкой ИГРАТЬ."
+                       FontSize="13"
+                       Foreground="#858994"
+                       Margin="0,8,0,25"/>
+
+            <Grid ColumnDefinitions="*,130">
+
+                <TextBox Name="GamePathBox"
+                         Grid.Column="0"
+                         Height="44"
+                         IsReadOnly="True"
+                         Watermark="Игра пока не выбрана"
+                         Margin="0,0,10,0"/>
+
+                <Button Grid.Column="1"
+                        Content="ВЫБРАТЬ"
+                        Height="44"
+                        HorizontalContentAlignment="Center"
+                        Click="SelectGameButton_Click"/>
+
+            </Grid>
+
+            <TextBlock Name="SaveStatus"
+                       Text=""
+                       FontSize="12"
+                       Foreground="#62E87C"
+                       Margin="0,15,0,0"/>
+
+        </StackPanel>
+
+    </Grid>
+
+</UserControl>

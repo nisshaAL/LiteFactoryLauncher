@@ -22,18 +22,25 @@
             </StackPanel>
 
             <StackPanel Grid.Column="1"
-                        Orientation="Horizontal"
-                        VerticalAlignment="Center"
-                        Spacing="10">
+            Orientation="Horizontal"
+            VerticalAlignment="Center"
+            Spacing="12">
 
-                <TextBlock Text="admin"
-                           Foreground="#DADCE2"
-                           VerticalAlignment="Center"/>
+    <Button Content="⚙"
+            Width="38"
+            Height="38"
+            FontSize="18"
+            Click="SettingsButton_Click"/>
 
-                <Ellipse Width="9"
-                         Height="9"
-                         Fill="#62E87C"/>
-            </StackPanel>
+    <TextBlock Text="admin"
+               Foreground="#DADCE2"
+               VerticalAlignment="Center"/>
+
+    <Ellipse Width="9"
+             Height="9"
+             Fill="#62E87C"/>
+
+</StackPanel>
 
         </Grid>
 
@@ -151,7 +158,8 @@
                     FontSize="16"
                     FontWeight="Bold"
                     HorizontalContentAlignment="Center"
-                    VerticalAlignment="Center"/>
+                    VerticalAlignment="Center"
+                    Click="PlayButton_Click"/>
 
         </Grid>
 
