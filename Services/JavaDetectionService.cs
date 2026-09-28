@@ -90,7 +90,7 @@ public sealed class JavaDetectionService
         }
     }
 
-    private static async Task<JavaRuntimeInfo?> InspectJavaAsync(string javaPath)
+    public static async Task<JavaRuntimeInfo?> InspectJavaAsync(string javaPath, bool isManaged = false)
     {
         if (!File.Exists(javaPath))
         {
@@ -132,7 +132,8 @@ public sealed class JavaDetectionService
                 MajorVersion = majorVersion,
                 Is64Bit = output.Contains("64-Bit", StringComparison.OrdinalIgnoreCase) ||
                           output.Contains("64 bit", StringComparison.OrdinalIgnoreCase),
-                IsCompatible = majorVersion == 8
+                IsCompatible = majorVersion == 8,
+                IsManaged = isManaged
             };
         }
         catch (OperationCanceledException)
@@ -141,6 +142,7 @@ public sealed class JavaDetectionService
             return new JavaRuntimeInfo
             {
                 Path = javaPath,
+                IsManaged = isManaged,
                 Error = "java.exe -version timed out."
             };
         }
@@ -149,6 +151,7 @@ public sealed class JavaDetectionService
             return new JavaRuntimeInfo
             {
                 Path = javaPath,
+                IsManaged = isManaged,
                 Error = ex.Message
             };
         }

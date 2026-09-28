@@ -14,5 +14,7 @@ public sealed class JavaRuntimeInfo
 
     public bool IsCompatible { get; set; }
 
+    public bool IsManaged { get; set; }
+
     public string? Error { get; set; }
 }

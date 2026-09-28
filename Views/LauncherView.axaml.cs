@@ -22,9 +22,11 @@ public partial class LauncherView : UserControl
     private readonly ModpackDownloadService _downloadService = new();
     private readonly ModpackInstaller _installer = new();
     private readonly GameRuntimeService _runtimeService = new();
+    private readonly ManagedJavaService _managedJavaService = new();
     private ModpackManifest _manifest;
     private LauncherState _state;
     private bool _isInstallRunning;
+    private bool _isJavaInstallRunning;
 
     public LauncherView()
     {
@@ -251,6 +253,9 @@ public partial class LauncherView : UserControl
         JavaStatusText.Text = "Checking...";
         JavaStatusText.Foreground = Brushes.LightGreen;
         ToolTip.SetTip(JavaStatusText, null);
+        InstallJavaButton.IsVisible = false;
+        JavaInstallProgress.IsVisible = false;
+        JavaInstallProgress.Value = 0;
 
         var status = await _runtimeService.GetRuntimeStatusAsync(
             string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion,
@@ -261,7 +266,9 @@ public partial class LauncherView : UserControl
 
         if (status.CompatibleJavaFound && status.CompatibleJava != null)
         {
-            JavaStatusText.Text = "Java 8 detected";
+            JavaStatusText.Text = status.CompatibleJava.IsManaged
+                ? "Java 8 (LiteFactory Runtime)"
+                : "Java 8 detected";
             JavaStatusText.Foreground = Brushes.LightGreen;
             ToolTip.SetTip(JavaStatusText, status.CompatibleJava.Path);
             return;
@@ -277,12 +284,61 @@ public partial class LauncherView : UserControl
             JavaStatusText.Text = $"{version} detected; Java 8 not found";
             JavaStatusText.Foreground = Brushes.Gold;
             ToolTip.SetTip(JavaStatusText, detectedJava.Path);
+            InstallJavaButton.IsVisible = true;
             return;
         }
 
-        JavaStatusText.Text = "Not found";
+        JavaStatusText.Text = "Java 8 required";
         JavaStatusText.Foreground = Brushes.IndianRed;
         ToolTip.SetTip(JavaStatusText, null);
+        InstallJavaButton.IsVisible = true;
+    }
+
+    private async void InstallJavaButton_Click(object? sender, RoutedEventArgs e)
+    {
+        if (_isJavaInstallRunning)
+        {
+            return;
+        }
+
+        _isJavaInstallRunning = true;
+        InstallJavaButton.IsEnabled = false;
+        JavaInstallProgress.IsVisible = true;
+        JavaInstallProgress.Value = 0;
+
+        try
+        {
+            JavaStatusText.Text = "Downloading Java...";
+            JavaStatusText.Foreground = Brushes.LightGreen;
+
+            var progress = new Progress<double>(value =>
+            {
+                JavaInstallProgress.Value = Math.Clamp(value, 0, 100);
+            });
+
+            var phase = new Progress<string>(message =>
+            {
+                JavaStatusText.Text = message;
+            });
+
+            var result = await _managedJavaService.InstallJava8Async(progress, phase);
+            if (!result.Success)
+            {
+                JavaStatusText.Text = result.ErrorMessage ?? "Java installation failed.";
+                JavaStatusText.Foreground = Brushes.IndianRed;
+                InstallJavaButton.IsVisible = true;
+                return;
+            }
+
+            JavaStatusText.Text = "Checking Java...";
+            JavaStatusText.Foreground = Brushes.LightGreen;
+            await LoadRuntimeStatusAsync();
+        }
+        finally
+        {
+            _isJavaInstallRunning = false;
+            InstallJavaButton.IsEnabled = true;
+        }
     }
 
     private void SetState(LauncherState state, string status)

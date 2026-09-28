@@ -12,6 +12,8 @@ public sealed class GameRuntimeStatus
 
     public bool CompatibleJavaFound => CompatibleJava != null;
 
+    public bool CanInstallManagedJava => !CompatibleJavaFound;
+
     public string JavaPath => CompatibleJava?.Path ?? (JavaRuntimes.Count > 0 ? JavaRuntimes[0].Path : "");
 
     public string JavaVersion => CompatibleJava?.Version ?? (JavaRuntimes.Count > 0 ? JavaRuntimes[0].Version : "");
