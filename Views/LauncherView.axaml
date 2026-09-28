@@ -117,6 +117,16 @@
                                    Foreground="White"
                                    Margin="0,4,0,20"/>
 
+                        <TextBlock Text="Latest version"
+                                   FontSize="11"
+                                   Foreground="#666B75"/>
+
+                        <TextBlock Name="LatestVersionText"
+                                   Text="0.0.1"
+                                   FontSize="17"
+                                   Foreground="White"
+                                   Margin="0,4,0,20"/>
+
                         <TextBlock Text="Статус"
                                    FontSize="11"
                                    Foreground="#666B75"/>

@@ -6,6 +6,7 @@ using LiteFactoryLauncher.Services;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text.Json;
 
 namespace LiteFactoryLauncher.Views;
@@ -14,11 +15,13 @@ public partial class LauncherView : UserControl
 {
     private const string InstallButtonText = "\u0423\u0421\u0422\u0410\u041d\u041e\u0412\u0418\u0422\u042c";
     private const string InstallingButtonText = "\u0423\u0421\u0422\u0410\u041d\u041e\u0412\u041a\u0410...";
+    private const string UpdateButtonText = "\u041e\u0411\u041d\u041e\u0412\u0418\u0422\u042c";
     private const string PlayButtonText = "\u0418\u0413\u0420\u0410\u0422\u042c";
 
+    private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
     private readonly ModpackInstaller _installer = new();
-    private readonly ModpackManifest _manifest;
+    private ModpackManifest _manifest;
     private LauncherState _state;
     private bool _isInstallRunning;
 
@@ -26,8 +29,9 @@ public partial class LauncherView : UserControl
     {
         InitializeComponent();
 
-        _manifest = LoadManifest();
+        _manifest = LoadBundledManifest();
         RefreshLauncherState();
+        _ = CheckRemoteManifestAsync();
     }
 
     private async void PlayButton_Click(object? sender, RoutedEventArgs e)
@@ -43,10 +47,35 @@ public partial class LauncherView : UserControl
             return;
         }
 
-        await InstallFromInternetAsync();
+        await InstallOrUpdateFromInternetAsync();
     }
 
-    private async System.Threading.Tasks.Task InstallFromInternetAsync()
+    private async System.Threading.Tasks.Task CheckRemoteManifestAsync()
+    {
+        if (_isInstallRunning)
+        {
+            return;
+        }
+
+        ShowStatus("\u041f\u0440\u043e\u0432\u0435\u0440\u043a\u0430 \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0439...", Brushes.LightGreen);
+
+        var result = await _remoteManifestService.LoadRemoteManifestAsync();
+        if (_isInstallRunning)
+        {
+            return;
+        }
+
+        if (result.Success && result.Manifest != null)
+        {
+            _manifest = result.Manifest;
+            RefreshLauncherState();
+            return;
+        }
+
+        RefreshLauncherState("\u041d\u0435 \u0443\u0434\u0430\u043b\u043e\u0441\u044c \u043f\u0440\u043e\u0432\u0435\u0440\u0438\u0442\u044c \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u044f");
+    }
+
+    private async System.Threading.Tasks.Task InstallOrUpdateFromInternetAsync()
     {
         _isInstallRunning = true;
         string? archivePath = null;
@@ -176,24 +205,41 @@ public partial class LauncherView : UserControl
         }
     }
 
-    private void RefreshLauncherState()
+    private void RefreshLauncherState(string? statusOverride = null)
     {
         var installedVersion = LauncherSettings.LoadInstalledPackVersion();
+        var installationValid = IsInstallationValid();
         InstalledVersionText.Text = installedVersion ?? "-";
+        LatestVersionText.Text = string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion;
 
-        if (string.IsNullOrWhiteSpace(installedVersion))
+        if (string.IsNullOrWhiteSpace(installedVersion) || !installationValid)
         {
-            SetState(LauncherState.NotInstalled, "Light Factory is not installed.");
+            SetState(LauncherState.NotInstalled, statusOverride ?? "Light Factory is not installed.");
             return;
         }
 
-        if (string.Equals(installedVersion, _manifest.PackVersion, StringComparison.OrdinalIgnoreCase))
+        var comparison = ComparePackVersions(installedVersion, _manifest.PackVersion);
+        if (comparison < 0)
         {
-            SetState(LauncherState.Installed, "Light Factory is installed.");
+            SetState(LauncherState.UpdateAvailable, statusOverride ?? $"\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435: {_manifest.PackVersion}");
             return;
         }
 
-        SetState(LauncherState.UpdateRequired, $"Update required: {installedVersion} -> {_manifest.PackVersion}.");
+        if (comparison == 0)
+        {
+            SetState(LauncherState.Installed, statusOverride ?? $"Light Factory {_manifest.PackVersion} is installed.");
+            return;
+        }
+
+        SetState(LauncherState.Installed, statusOverride ?? $"Installed version {installedVersion} is newer than latest {_manifest.PackVersion}.");
+    }
+
+    private bool IsInstallationValid()
+    {
+        var installDirectory = LauncherSettings.LoadInstallDirectory();
+        return Directory.Exists(installDirectory) &&
+               Directory.Exists(Path.Combine(installDirectory, "mods")) &&
+               Directory.Exists(Path.Combine(installDirectory, "config"));
     }
 
     private void SetState(LauncherState state, string status)
@@ -212,6 +258,10 @@ public partial class LauncherView : UserControl
                 InstallProgress.Value = 0;
                 ShowStatus(status, Brushes.IndianRed);
                 break;
+            case LauncherState.UpdateAvailable:
+                MainActionButton.Content = UpdateButtonText;
+                ShowStatus(status, Brushes.Gold);
+                break;
             case LauncherState.Downloading:
                 MainActionButton.Content = InstallingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
@@ -226,13 +276,8 @@ public partial class LauncherView : UserControl
                 break;
             case LauncherState.Installed:
                 MainActionButton.Content = PlayButtonText;
-                InstalledVersionText.Text = _manifest.PackVersion;
                 InstallProgress.Value = 100;
                 ShowStatus(status, Brushes.LightGreen);
-                break;
-            case LauncherState.UpdateRequired:
-                MainActionButton.Content = InstallButtonText;
-                ShowStatus(status, Brushes.Gold);
                 break;
             case LauncherState.Error:
                 MainActionButton.Content = InstallButtonText;
@@ -252,7 +297,7 @@ public partial class LauncherView : UserControl
         LaunchStatus.Text = message;
     }
 
-    private static ModpackManifest LoadManifest()
+    private static ModpackManifest LoadBundledManifest()
     {
         var manifestPath = Path.Combine(AppContext.BaseDirectory, "manifest.json");
 
@@ -282,14 +327,59 @@ public partial class LauncherView : UserControl
         }) ?? new ModpackManifest();
     }
 
+    private static int ComparePackVersions(string installedVersion, string latestVersion)
+    {
+        installedVersion = installedVersion.Trim();
+        latestVersion = latestVersion.Trim();
+
+        if (TryParseVersionParts(installedVersion, out var installedParts) &&
+            TryParseVersionParts(latestVersion, out var latestParts))
+        {
+            var maxLength = Math.Max(installedParts.Length, latestParts.Length);
+            for (var index = 0; index < maxLength; index++)
+            {
+                var installedPart = index < installedParts.Length ? installedParts[index] : 0;
+                var latestPart = index < latestParts.Length ? latestParts[index] : 0;
+
+                if (installedPart != latestPart)
+                {
+                    return installedPart.CompareTo(latestPart);
+                }
+            }
+
+            return 0;
+        }
+
+        return string.Compare(installedVersion, latestVersion, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryParseVersionParts(string version, out int[] parts)
+    {
+        var splitParts = version.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (splitParts.Length == 0)
+        {
+            parts = Array.Empty<int>();
+            return false;
+        }
+
+        if (splitParts.Any(part => !int.TryParse(part, out _)))
+        {
+            parts = Array.Empty<int>();
+            return false;
+        }
+
+        parts = splitParts.Select(int.Parse).ToArray();
+        return true;
+    }
+
     private enum LauncherState
     {
         NotInstalled,
+        UpdateAvailable,
         Downloading,
         Verifying,
         Installing,
         Installed,
-        UpdateRequired,
         Error
     }
 }
