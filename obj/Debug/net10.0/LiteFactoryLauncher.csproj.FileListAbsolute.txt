@@ -90,3 +90,4 @@ C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\obj\Debug\net10.0\
 C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\obj\Debug\net10.0\LiteFactoryLauncher.pdb
 C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\obj\Debug\net10.0\LiteFactoryLauncher.genruntimeconfig.cache
 C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\obj\Debug\net10.0\ref\LiteFactoryLauncher.dll
+C:\Users\Erwd\Desktop\LiteFactoryLauncher\LiteFactoryLauncher\bin\Debug\net10.0\manifest.json
