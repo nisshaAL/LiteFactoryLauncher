@@ -111,7 +111,8 @@
                                    FontSize="11"
                                    Foreground="#666B75"/>
 
-                        <TextBlock Text="0.0.1"
+                        <TextBlock Name="InstalledVersionText"
+                                   Text="0.0.1"
                                    FontSize="17"
                                    Foreground="White"
                                    Margin="0,4,0,20"/>
@@ -145,14 +146,16 @@
                            Foreground="#686D77"
                            FontSize="12"/>
 
-                <ProgressBar Value="100"
+                <ProgressBar Name="InstallProgress"
+                             Value="100"
                              Maximum="100"
                              Height="5"
                              Margin="0,10,40,0"/>
 
             </StackPanel>
 
-            <Button Grid.Column="1"
+            <Button Name="MainActionButton"
+                    Grid.Column="1"
                     Content="ИГРАТЬ"
                     Height="55"
                     FontSize="16"
