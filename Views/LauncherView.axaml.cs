@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Media;
+using Avalonia.Threading;
 using LiteFactoryLauncher.Models;
 using LiteFactoryLauncher.Services;
 using System;
@@ -19,6 +20,8 @@ public partial class LauncherView : UserControl
     private const string UpdateButtonText = "\u041e\u0411\u041d\u041e\u0412\u0418\u0422\u042c";
     private const string PlayButtonText = "\u0418\u0413\u0420\u0410\u0422\u042c";
     private const string PreparingButtonText = "\u041f\u041e\u0414\u0413\u041e\u0422\u041e\u0412\u041a\u0410...";
+    private const string StartingButtonText = "STARTING...";
+    private const string RunningButtonText = "RUNNING";
 
     private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
@@ -29,6 +32,7 @@ public partial class LauncherView : UserControl
     private readonly ForgeRuntimeService _forgeRuntimeService = new();
     private readonly GamePreparationService _preparationService = new();
     private readonly GameLaunchService _launchService = new();
+    private readonly GameProcessService _processService = new();
     private readonly LiteFactorySession? _session;
     private readonly Action? _logout;
     private ModpackManifest _manifest;
@@ -41,6 +45,8 @@ public partial class LauncherView : UserControl
     private bool _isMinecraftInstallRunning;
     private bool? _forgeRuntimeReady;
     private bool _isForgeInstallRunning;
+    private bool _isGameStarting;
+    private bool _isGameRunning;
     private CancellationTokenSource? _preparationCancellation;
 
     public LauncherView()
@@ -54,6 +60,7 @@ public partial class LauncherView : UserControl
         _logout = logout;
         InitializeComponent();
 
+        _processService.ProcessExited += GameProcessService_ProcessExited;
         AccountNameText.Text = _session?.Account.Nickname ?? "";
         _manifest = LoadBundledManifest();
         RefreshLauncherState();
@@ -63,7 +70,7 @@ public partial class LauncherView : UserControl
 
     private async void PlayButton_Click(object? sender, RoutedEventArgs e)
     {
-        if (_isPreparationRunning)
+        if (_isPreparationRunning || _isGameStarting || _isGameRunning || _processService.IsRunning)
         {
             return;
         }
@@ -243,7 +250,7 @@ public partial class LauncherView : UserControl
             ToolTip.SetTip(LaunchStatus, null);
             await LoadRuntimeStatusAsync();
             RefreshLauncherState("Ready to launch.");
-            await BuildLaunchPlanDiagnosticAsync(profile);
+            await BuildLaunchPlanAndStartAsync(profile);
         }
         finally
         {
@@ -255,30 +262,55 @@ public partial class LauncherView : UserControl
         }
     }
 
-    private async System.Threading.Tasks.Task BuildLaunchPlanDiagnosticAsync(GameProfile profile)
+    private async System.Threading.Tasks.Task BuildLaunchPlanAndStartAsync(GameProfile profile)
     {
         var result = await _launchService.BuildLaunchPlanAsync(profile, new GameLaunchOptions());
         if (result.Plan == null)
         {
-            ShowStatus(result.ErrorMessage ?? "Launch plan could not be built.", Brushes.IndianRed);
+            SetState(LauncherState.Installed, result.ErrorMessage ?? "Launch plan could not be built.");
+            LaunchStatus.Foreground = Brushes.IndianRed;
             return;
         }
 
-        switch (result.State)
+        SetState(LauncherState.Starting, "Starting Minecraft...");
+        _isGameStarting = true;
+
+        var startResult = _processService.Start(result.Plan);
+        _isGameStarting = false;
+
+        switch (startResult.Status)
         {
-            case GameLaunchValidationState.Ready:
-                ShowStatus("Launch plan ready.", Brushes.LightGreen);
-                ToolTip.SetTip(LaunchStatus, $"Main class: {result.Plan.MainClass}");
+            case GameProcessStartStatus.Started:
+                _isGameRunning = true;
+                SetState(LauncherState.Running, $"Minecraft is running. Process ID: {startResult.ProcessId}");
                 break;
-            case GameLaunchValidationState.AuthenticationRequired:
-                ShowStatus("Runtime ready - authentication required.", Brushes.Gold);
+            case GameProcessStartStatus.AuthenticationRequired:
+                SetState(LauncherState.Installed, startResult.Message);
+                LaunchStatus.Foreground = Brushes.Gold;
                 ToolTip.SetTip(LaunchStatus, $"Launch plan built. Missing authentication: {string.Join(", ", result.Plan.MissingAuthenticationFields)}");
                 break;
+            case GameProcessStartStatus.AlreadyRunning:
+                _isGameRunning = true;
+                SetState(LauncherState.Running, startResult.Message);
+                break;
             default:
-                ShowStatus(result.ErrorMessage ?? "Launch plan validation failed.", Brushes.IndianRed);
-                ToolTip.SetTip(LaunchStatus, string.Join(Environment.NewLine, result.Plan.ValidationErrors));
+                SetState(LauncherState.Installed, startResult.Message);
+                LaunchStatus.Foreground = Brushes.IndianRed;
+                ToolTip.SetTip(LaunchStatus, result.Plan.ValidationErrors.Count == 0
+                    ? startResult.Message
+                    : string.Join(Environment.NewLine, result.Plan.ValidationErrors));
                 break;
         }
+    }
+
+    private void GameProcessService_ProcessExited(object? sender, GameProcessExitedEventArgs e)
+    {
+        Dispatcher.UIThread.Post(() =>
+        {
+            _isGameRunning = false;
+            _isGameStarting = false;
+            SetState(LauncherState.Installed, $"Minecraft exited. Exit code: {e.ExitCode}");
+        });
     }
 
     private void LaunchGame()
@@ -628,7 +660,9 @@ public partial class LauncherView : UserControl
             state != LauncherState.Downloading &&
             state != LauncherState.Verifying &&
             state != LauncherState.Installing &&
-            state != LauncherState.Preparing;
+            state != LauncherState.Preparing &&
+            state != LauncherState.Starting &&
+            state != LauncherState.Running;
 
         switch (state)
         {
@@ -655,6 +689,15 @@ public partial class LauncherView : UserControl
                 break;
             case LauncherState.Preparing:
                 MainActionButton.Content = PreparingButtonText;
+                ShowStatus(status, Brushes.LightGreen);
+                break;
+            case LauncherState.Starting:
+                MainActionButton.Content = StartingButtonText;
+                ShowStatus(status, Brushes.LightGreen);
+                break;
+            case LauncherState.Running:
+                MainActionButton.Content = RunningButtonText;
+                InstallProgress.Value = 100;
                 ShowStatus(status, Brushes.LightGreen);
                 break;
             case LauncherState.Installed:
@@ -777,6 +820,8 @@ public partial class LauncherView : UserControl
         Verifying,
         Installing,
         Preparing,
+        Starting,
+        Running,
         Installed,
         Error
     }
