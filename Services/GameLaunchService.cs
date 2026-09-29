@@ -47,19 +47,20 @@ public sealed class GameLaunchService
             Log($"Launch plan build started for profile {profile.Id} ({profile.DisplayName}).");
 
             var runtimeStatus = await _runtimeService.GetRuntimeStatusAsync(profile.MinecraftVersion, profile.ForgeVersion);
-            if (runtimeStatus.CompatibleJava == null || string.IsNullOrWhiteSpace(runtimeStatus.CompatibleJava.Path))
+            var selectedJava = await ResolveJavaRuntimeAsync(options, runtimeStatus);
+            if (selectedJava == null || string.IsNullOrWhiteSpace(selectedJava.Path))
             {
                 plan.ValidationErrors.Add("Compatible Java 8 was not found.");
             }
             else
             {
-                plan.JavaExecutable = runtimeStatus.CompatibleJava.Path;
+                plan.JavaExecutable = selectedJava.Path;
                 if (!File.Exists(plan.JavaExecutable))
                 {
                     plan.ValidationErrors.Add($"Selected Java executable does not exist: {plan.JavaExecutable}");
                 }
 
-                if (!runtimeStatus.CompatibleJava.IsCompatible)
+                if (!selectedJava.IsCompatible)
                 {
                     plan.ValidationErrors.Add("Selected Java runtime is not compatible Java 8.");
                 }
@@ -123,6 +124,20 @@ public sealed class GameLaunchService
         plan.JvmArguments.Add($"-Djava.library.path={plan.NativesDirectory}");
         plan.JvmArguments.Add("-cp");
         plan.JvmArguments.Add(plan.Classpath);
+    }
+
+    private static async Task<JavaRuntimeInfo?> ResolveJavaRuntimeAsync(GameLaunchOptions options, GameRuntimeStatus runtimeStatus)
+    {
+        if (!string.IsNullOrWhiteSpace(options.CustomJavaExecutable) && File.Exists(options.CustomJavaExecutable))
+        {
+            var customRuntime = await JavaDetectionService.InspectJavaAsync(options.CustomJavaExecutable);
+            if (customRuntime is { IsCompatible: true })
+            {
+                return customRuntime;
+            }
+        }
+
+        return runtimeStatus.CompatibleJava;
     }
 
     private static void AddClasspath(GameLaunchPlan plan, MergedProfile metadata)

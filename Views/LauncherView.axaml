@@ -2,270 +2,294 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LiteFactoryLauncher.Views.LauncherView">
 
-    <Grid Background="#101114"
-          RowDefinitions="90,*,110">
+    <Grid Background="#0B0D10"
+          RowDefinitions="74,*,62">
 
-        <!-- Верхняя панель -->
         <Grid Grid.Row="0"
-              ColumnDefinitions="*,Auto"
-              Margin="45,0">
+              ColumnDefinitions="Auto,*,Auto"
+              Margin="42,0">
 
             <StackPanel VerticalAlignment="Center">
                 <TextBlock Text="LITEFACTORY"
                            FontSize="25"
-                           FontWeight="Bold"
-                           Foreground="White"/>
-
+                           FontWeight="Black"
+                           Foreground="#F4F4F5"/>
                 <TextBlock Text="LAUNCHER"
-                           FontSize="11"
-                           Foreground="#777B85"/>
+                           FontSize="10"
+                           FontWeight="Bold"
+                           Foreground="#606876"/>
             </StackPanel>
 
             <StackPanel Grid.Column="1"
-            Orientation="Horizontal"
-            VerticalAlignment="Center"
-            Spacing="12">
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Center"
+                        Spacing="28">
+                <TextBlock Text="ИГРА"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="#FFB347"/>
+                <TextBlock Text="НОВОСТИ"
+                           FontSize="12"
+                           FontWeight="Bold"
+                           Foreground="#8D95A5"/>
+            </StackPanel>
 
-    <Button Content="⚙"
-            Width="38"
-            Height="38"
-            FontSize="18"
-            Click="SettingsButton_Click"/>
-
-    <TextBlock Name="AccountNameText"
-               Text=""
-               Foreground="#DADCE2"
-               VerticalAlignment="Center"/>
-
-    <Ellipse Width="9"
-             Height="9"
-             Fill="#62E87C"/>
-
-    <Button Name="LogoutButton"
-            Content="LOGOUT"
-            Height="30"
-            FontSize="10"
-            FontWeight="Bold"
-            HorizontalContentAlignment="Center"
-            Click="LogoutButton_Click"/>
-
-</StackPanel>
-
+            <StackPanel Grid.Column="2"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center"
+                        Spacing="12">
+                <TextBlock Name="AccountNameText"
+                           Foreground="#DADCE2"
+                           VerticalAlignment="Center"/>
+                <Ellipse Width="8"
+                         Height="8"
+                         Fill="#62E87C"/>
+                <Button Content="⚙"
+                        Width="38"
+                        Height="38"
+                        FontSize="17"
+                        Click="SettingsButton_Click"/>
+                <Button Name="LogoutButton"
+                        Content="ВЫЙТИ"
+                        Height="30"
+                        FontSize="10"
+                        FontWeight="Bold"
+                        HorizontalContentAlignment="Center"
+                        Click="LogoutButton_Click"/>
+            </StackPanel>
         </Grid>
 
-
-        <!-- Контент -->
         <Grid Grid.Row="1"
-              Margin="45,20">
+              Margin="42,14"
+              ColumnDefinitions="1.45*,0.85*">
 
-            <Grid ColumnDefinitions="*,330">
+            <Border Background="#15181E"
+                    BorderBrush="#18FFFFFF"
+                    BorderThickness="1"
+                    CornerRadius="8"
+                    Padding="28"
+                    Margin="0,0,26,0">
 
-                <!-- Новости -->
-                <StackPanel Margin="0,0,50,0">
-
-                    <TextBlock Text="Последние новости"
-                               FontSize="26"
-                               FontWeight="Bold"
-                               Foreground="White"
-                               Margin="0,0,0,20"/>
-
-                    <Border Background="#17191E"
-                            CornerRadius="8"
-                            Padding="25">
-
-                        <StackPanel>
-
-                            <TextBlock Text="LiteFactory Launcher запущен!"
-                                       FontSize="18"
-                                       FontWeight="SemiBold"
-                                       Foreground="White"/>
-
-                            <TextBlock Text="28 сентября 2026"
-                                       FontSize="11"
-                                       Foreground="#626772"
-                                       Margin="0,5,0,18"/>
-
-                            <TextBlock Text="Это первый тестовый запуск нашего лаунчера. Скоро здесь будут появляться новости проекта и обновления сборки."
-                                       TextWrapping="Wrap"
-                                       FontSize="14"
-                                       Foreground="#A1A5AE"
-                                       LineHeight="22"/>
-
-                        </StackPanel>
-
-                    </Border>
-
-                </StackPanel>
-
-
-                <!-- Информация о сборке -->
-                <Border Grid.Column="1"
-                        Background="#17191E"
-                        CornerRadius="8"
-                        Padding="22">
-
+                <Grid RowDefinitions="Auto,Auto,Auto">
                     <StackPanel>
+                        <TextBlock Text="LIGHT FACTORY"
+                                   FontSize="48"
+                                   FontWeight="Black"
+                                   Foreground="#F4F4F5"/>
 
-                        <TextBlock Text="Сборка"
-                                   FontSize="22"
-                                   FontWeight="Bold"
-                                   Foreground="White"/>
-
-                        <TextBlock Text="LiteFactory"
-                                   FontSize="14"
-                                   Foreground="#8B909A"
-                                   Margin="0,6,0,18"/>
-
-                        <TextBlock Text="Установленная версия"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="InstalledVersionText"
-                                   Text="0.0.1"
-                                   FontSize="15"
-                                   Foreground="White"
-                                   Margin="0,2,0,8"/>
-
-                        <TextBlock Text="Latest version"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="LatestVersionText"
-                                   Text="0.0.1"
-                                   FontSize="15"
-                                   Foreground="White"
-                                   Margin="0,2,0,10"/>
-                        <TextBlock Text="Minecraft"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="MinecraftVersionText"
-                                   Text="1.12.2"
-                                   FontSize="14"
-                                   Foreground="White"
-                                   Margin="0,2,0,8"/>
-
-                        <Button Name="InstallMinecraftButton"
-                                Content="INSTALL MINECRAFT"
-                                Height="30"
-                                FontSize="11"
-                                FontWeight="Bold"
-                                HorizontalContentAlignment="Center"
-                                IsVisible="False"
-                                Margin="0,0,0,8"
-                                Click="InstallMinecraftButton_Click"/>
-
-                        <ProgressBar Name="MinecraftInstallProgress"
-                                     Value="0"
-                                     Maximum="100"
-                                     Height="4"
-                                     IsVisible="False"
-                                     Margin="0,0,0,10"/>
-
-                        <TextBlock Text="Forge"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="ForgeVersionText"
-                                   Text="14.23.5.2860"
-                                   FontSize="14"
-                                   Foreground="White"
-                                   Margin="0,2,0,8"/>
-
-                        <Button Name="InstallForgeButton"
-                                Content="INSTALL FORGE"
-                                Height="30"
-                                FontSize="11"
-                                FontWeight="Bold"
-                                HorizontalContentAlignment="Center"
-                                IsVisible="False"
-                                Margin="0,0,0,8"
-                                Click="InstallForgeButton_Click"/>
-
-                        <ProgressBar Name="ForgeInstallProgress"
-                                     Value="0"
-                                     Maximum="100"
-                                     Height="4"
-                                     IsVisible="False"
-                                     Margin="0,0,0,10"/>
-
-                        <TextBlock Text="Java"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="JavaStatusText"
-                                   Text="Checking..."
-                                   FontSize="14"
+                        <TextBlock Text="Индустриальная сборка о технологиях, автоматизации, энергии и развитии производства."
+                                   FontSize="17"
                                    Foreground="#A1A5AE"
                                    TextWrapping="Wrap"
-                                   Margin="0,2,0,10"/>
+                                   LineHeight="25"
+                                   MaxWidth="620"
+                                   Margin="0,10,0,18"/>
+
+                        <WrapPanel>
+                            <Border Background="#1AF59E0B"
+                                    BorderBrush="#55F59E0B"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <TextBlock Text="INDUSTRIAL"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="#FFB347"/>
+                            </Border>
+                            <Border Background="#1AF59E0B"
+                                    BorderBrush="#55F59E0B"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <TextBlock Text="AUTOMATION"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="#FFB347"/>
+                            </Border>
+                            <Border Background="#1AF59E0B"
+                                    BorderBrush="#55F59E0B"
+                                    BorderThickness="1"
+                                    CornerRadius="6"
+                                    Padding="10,6"
+                                    Margin="0,0,8,8">
+                                <TextBlock Text="TECH"
+                                           FontSize="11"
+                                           FontWeight="Bold"
+                                           Foreground="#FFB347"/>
+                            </Border>
+                        </WrapPanel>
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            Background="#101318"
+                            BorderBrush="#12FFFFFF"
+                            BorderThickness="1"
+                            CornerRadius="8"
+                            Margin="0,22,0,0"
+                            MinHeight="165">
+                        <Grid>
+                            <TextBlock Text="LIGHT FACTORY ARTWORK"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       FontSize="12"
+                                       FontWeight="Bold"
+                                       Foreground="#3F4652"/>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="2"
+                          RowDefinitions="Auto,Auto"
+                          Margin="0,20,0,0">
+
+                        <TextBlock Name="VersionMetadataText"
+                                   Text="Minecraft 1.12.2  •  Forge 14.23.5.2860  •  v0.1.1"
+                                   FontSize="13"
+                                   Foreground="#8D95A5"
+                                   TextWrapping="Wrap"/>
+
+                        <Grid Grid.Row="1"
+                              ColumnDefinitions="*,Auto"
+                              Margin="0,12,0,0">
+                            <TextBlock Name="LaunchStatus"
+                                       Text="Готово к запуску"
+                                       FontSize="15"
+                                       FontWeight="SemiBold"
+                                       Foreground="#62E87C"
+                                       TextWrapping="Wrap"
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,20,0"/>
+
+                            <Button Name="MainActionButton"
+                                    Grid.Column="1"
+                                    Content="ИГРАТЬ"
+                                    MinWidth="200"
+                                    Height="54"
+                                    FontSize="16"
+                                    FontWeight="Black"
+                                    HorizontalContentAlignment="Center"
+                                    VerticalAlignment="Center"
+                                    Click="PlayButton_Click"/>
+                        </Grid>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <StackPanel Grid.Column="1"
+                        Spacing="18">
+
+                <Border Background="#15181E"
+                        BorderBrush="#18FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="24">
+                    <StackPanel>
+                        <TextBlock Text="НОВОСТИ"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#FFB347"/>
+                        <TextBlock Text="LiteFactory Launcher запущен!"
+                                   FontSize="21"
+                                   FontWeight="Bold"
+                                   Foreground="#F4F4F5"
+                                   Margin="0,12,0,0"/>
+                        <TextBlock Text="28 сентября 2026"
+                                   FontSize="11"
+                                   Foreground="#606876"
+                                   Margin="0,4,0,14"/>
+                        <TextBlock Text="Первый тестовый запуск лаунчера. Новости проекта и обновления сборки будут появляться здесь."
+                                   TextWrapping="Wrap"
+                                   FontSize="14"
+                                   Foreground="#A1A5AE"
+                                   LineHeight="22"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#11141A"
+                        BorderBrush="#14FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="22">
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="СОСТОЯНИЕ"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#FFB347"/>
+
+                        <TextBlock Name="InstalledVersionText"
+                                   Text="-"
+                                   IsVisible="False"/>
+                        <TextBlock Name="LatestVersionText"
+                                   Text="-"
+                                   IsVisible="False"/>
+                        <TextBlock Name="MinecraftVersionText"
+                                   Text="Minecraft 1.12.2"
+                                   FontSize="13"
+                                   Foreground="#8D95A5"/>
+                        <TextBlock Name="ForgeVersionText"
+                                   Text="Forge 14.23.5.2860"
+                                   FontSize="13"
+                                   Foreground="#8D95A5"/>
+                        <TextBlock Name="JavaStatusText"
+                                   Text="Java"
+                                   FontSize="13"
+                                   Foreground="#8D95A5"
+                                   TextWrapping="Wrap"/>
+
                         <Button Name="InstallJavaButton"
-                                Content="INSTALL JAVA"
+                                Content="УСТАНОВИТЬ JAVA"
                                 Height="30"
                                 FontSize="11"
                                 FontWeight="Bold"
-                                HorizontalContentAlignment="Center"
                                 IsVisible="False"
-                                Margin="0,0,0,8"
+                                HorizontalContentAlignment="Center"
                                 Click="InstallJavaButton_Click"/>
-
                         <ProgressBar Name="JavaInstallProgress"
                                      Value="0"
                                      Maximum="100"
                                      Height="4"
-                                     IsVisible="False"
-                                     Margin="0,0,0,10"/>
-
-                        <TextBlock Text="Статус"
-                                   FontSize="11"
-                                   Foreground="#666B75"/>
-
-                        <TextBlock Name="LaunchStatus" Text="● Готово к запуску"
-                                   FontSize="14"
-                                   Foreground="#62E87C"
-                                   TextWrapping="Wrap"
-                                   Margin="0,2,0,0"/>
-
+                                     IsVisible="False"/>
+                        <Button Name="InstallMinecraftButton"
+                                Content="УСТАНОВИТЬ MINECRAFT"
+                                Height="30"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                IsVisible="False"
+                                HorizontalContentAlignment="Center"
+                                Click="InstallMinecraftButton_Click"/>
+                        <ProgressBar Name="MinecraftInstallProgress"
+                                     Value="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     IsVisible="False"/>
+                        <Button Name="InstallForgeButton"
+                                Content="УСТАНОВИТЬ FORGE"
+                                Height="30"
+                                FontSize="11"
+                                FontWeight="Bold"
+                                IsVisible="False"
+                                HorizontalContentAlignment="Center"
+                                Click="InstallForgeButton_Click"/>
+                        <ProgressBar Name="ForgeInstallProgress"
+                                     Value="0"
+                                     Maximum="100"
+                                     Height="4"
+                                     IsVisible="False"/>
                     </StackPanel>
-
                 </Border>
-
-            </Grid>
-
-        </Grid>
-
-
-        <!-- Нижняя панель -->
-        <Grid Grid.Row="2"
-              ColumnDefinitions="*,220"
-              Margin="45,20">
-
-            <StackPanel VerticalAlignment="Center">
-
-                <TextBlock Text="Версия 0.0.1"
-                           Foreground="#686D77"
-                           FontSize="12"/>
-
-                <ProgressBar Name="InstallProgress"
-                             Value="100"
-                             Maximum="100"
-                             Height="5"
-                             Margin="0,10,40,0"/>
-
             </StackPanel>
-
-            <Button Name="MainActionButton"
-                    Grid.Column="1"
-                    Content="ИГРАТЬ"
-                    Height="55"
-                    FontSize="16"
-                    FontWeight="Bold"
-                    HorizontalContentAlignment="Center"
-                    VerticalAlignment="Center"
-                    Click="PlayButton_Click"/>
-
         </Grid>
 
+        <Grid Grid.Row="2"
+              Margin="42,0,42,18"
+              RowDefinitions="*,Auto">
+            <ProgressBar Name="InstallProgress"
+                         Grid.Row="1"
+                         Value="100"
+                         Maximum="100"
+                         Height="5"/>
+        </Grid>
     </Grid>
-
 </UserControl>

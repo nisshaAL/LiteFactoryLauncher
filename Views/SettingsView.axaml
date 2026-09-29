@@ -2,13 +2,12 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LiteFactoryLauncher.Views.SettingsView">
 
-    <Grid Background="#101114"
-          RowDefinitions="90,*">
+    <Grid Background="#0B0D10"
+          RowDefinitions="82,*">
 
-        <!-- Верх -->
         <Grid Grid.Row="0"
               ColumnDefinitions="Auto,*"
-              Margin="45,0">
+              Margin="42,0">
 
             <Button Content="←"
                     Width="42"
@@ -20,61 +19,163 @@
             <StackPanel Grid.Column="1"
                         VerticalAlignment="Center"
                         Margin="20,0,0,0">
-
                 <TextBlock Text="НАСТРОЙКИ"
-                           FontSize="24"
-                           FontWeight="Bold"
-                           Foreground="White"/>
-
+                           FontSize="28"
+                           FontWeight="Black"
+                           Foreground="#F4F4F5"/>
                 <TextBlock Text="LiteFactory Launcher"
                            FontSize="12"
-                           Foreground="#777B85"/>
-
+                           FontWeight="Bold"
+                           Foreground="#606876"/>
             </StackPanel>
-
         </Grid>
 
-        <!-- Настройки -->
-        <StackPanel Grid.Row="1"
-                    Width="650"
-                    HorizontalAlignment="Center"
-                    Margin="0,60,0,0">
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Width="760"
+                        HorizontalAlignment="Center"
+                        Margin="0,24,0,42"
+                        Spacing="18">
 
-            <TextBlock Text="Путь к игре"
-                       FontSize="22"
-                       FontWeight="Bold"
-                       Foreground="White"/>
+                <Border Background="#15181E"
+                        BorderBrush="#18FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="26">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="ИГРА"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#FFB347"/>
 
-            <TextBlock Text="Выберите .exe файл, который будет запускаться кнопкой ИГРАТЬ."
-                       FontSize="13"
-                       Foreground="#858994"
-                       Margin="0,8,0,25"/>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel>
+                                <TextBlock Text="Оперативная память"
+                                           FontSize="20"
+                                           FontWeight="Bold"
+                                           Foreground="#F4F4F5"/>
+                                <TextBlock Text="Максимальный объем RAM для Minecraft."
+                                           FontSize="13"
+                                           Foreground="#8D95A5"
+                                           Margin="0,6,0,0"/>
+                            </StackPanel>
 
-            <Grid ColumnDefinitions="*,130">
+                            <TextBlock Name="RamValueText"
+                                       Grid.Column="1"
+                                       Text="4 GB"
+                                       FontSize="22"
+                                       FontWeight="Black"
+                                       Foreground="#FFB347"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
 
-                <TextBox Name="GamePathBox"
-                         Grid.Column="0"
-                         Height="44"
-                         IsReadOnly="True"
-                         Watermark="Игра пока не выбрана"
-                         Margin="0,0,10,0"/>
+                        <Slider Name="RamSlider"
+                                Minimum="2"
+                                Maximum="16"
+                                TickFrequency="1"
+                                IsSnapToTickEnabled="True"
+                                ValueChanged="RamSlider_ValueChanged"/>
+                    </StackPanel>
+                </Border>
 
-                <Button Grid.Column="1"
-                        Content="ВЫБРАТЬ"
-                        Height="44"
-                        HorizontalContentAlignment="Center"
-                        Click="SelectGameButton_Click"/>
+                <Border Background="#15181E"
+                        BorderBrush="#18FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="26">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="JAVA"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#FFB347"/>
 
-            </Grid>
+                        <Grid ColumnDefinitions="190,*"
+                              RowDefinitions="Auto,Auto"
+                              RowSpacing="12">
+                            <TextBlock Text="Java"
+                                       FontSize="20"
+                                       FontWeight="Bold"
+                                       Foreground="#F4F4F5"
+                                       VerticalAlignment="Center"/>
 
-            <TextBlock Name="SaveStatus"
-                       Text=""
-                       FontSize="12"
-                       Foreground="#62E87C"
-                       Margin="0,15,0,0"/>
+                            <ComboBox Name="JavaModeBox"
+                                      Grid.Column="1"
+                                      Height="40"
+                                      SelectionChanged="JavaModeBox_SelectionChanged">
+                                <ComboBoxItem Content="Автоматически"/>
+                                <ComboBoxItem Content="Свой путь"/>
+                            </ComboBox>
 
-        </StackPanel>
+                            <TextBlock Grid.Row="1"
+                                       Text="Путь"
+                                       FontSize="13"
+                                       FontWeight="Bold"
+                                       Foreground="#8D95A5"
+                                       VerticalAlignment="Center"/>
 
+                            <Grid Grid.Row="1"
+                                  Grid.Column="1"
+                                  ColumnDefinitions="*,150">
+                                <TextBox Name="CustomJavaPathBox"
+                                         Height="40"
+                                         IsReadOnly="True"
+                                         Watermark="java.exe не выбран"
+                                         Margin="0,0,10,0"/>
+                                <Button Name="SelectJavaButton"
+                                        Grid.Column="1"
+                                        Content="ВЫБРАТЬ"
+                                        Height="40"
+                                        HorizontalContentAlignment="Center"
+                                        Click="SelectJavaButton_Click"/>
+                            </Grid>
+                        </Grid>
+
+                        <TextBlock Name="JavaSettingsStatus"
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="#8D95A5"
+                                   TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Background="#15181E"
+                        BorderBrush="#18FFFFFF"
+                        BorderThickness="1"
+                        CornerRadius="8"
+                        Padding="26">
+                    <StackPanel Spacing="16">
+                        <TextBlock Text="ФАЙЛЫ"
+                                   FontSize="12"
+                                   FontWeight="Bold"
+                                   Foreground="#FFB347"/>
+
+                        <TextBlock Text="Папка Light Factory"
+                                   FontSize="20"
+                                   FontWeight="Bold"
+                                   Foreground="#F4F4F5"/>
+
+                        <TextBox Name="GameDirectoryBox"
+                                 Height="40"
+                                 IsReadOnly="True"/>
+
+                        <StackPanel Orientation="Horizontal"
+                                    Spacing="12">
+                            <Button Content="ОТКРЫТЬ ПАПКУ ИГРЫ"
+                                    Height="40"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OpenGameFolderButton_Click"/>
+                            <Button Content="ОТКРЫТЬ ПАПКУ ЛОГОВ"
+                                    Height="40"
+                                    HorizontalContentAlignment="Center"
+                                    Click="OpenLogsFolderButton_Click"/>
+                        </StackPanel>
+
+                        <TextBlock Name="SaveStatus"
+                                   Text=""
+                                   FontSize="12"
+                                   Foreground="#62E87C"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
-
 </UserControl>

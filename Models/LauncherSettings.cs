@@ -14,6 +14,14 @@ public static class LauncherSettings
 
     private static readonly string InstalledPackVersionFile = Path.Combine(SettingsDirectory, "installed-pack-version.txt");
 
+    private static readonly string MaxRamMbFile = Path.Combine(SettingsDirectory, "max-ram-mb.txt");
+
+    private static readonly string JavaModeFile = Path.Combine(SettingsDirectory, "java-mode.txt");
+
+    private static readonly string CustomJavaPathFile = Path.Combine(SettingsDirectory, "custom-java-path.txt");
+
+    public static string SettingsPath => SettingsDirectory;
+
     public static string? LoadGamePath()
     {
         if (!File.Exists(GamePathFile))
@@ -66,5 +74,59 @@ public static class LauncherSettings
     {
         Directory.CreateDirectory(SettingsDirectory);
         File.WriteAllText(InstalledPackVersionFile, version);
+    }
+
+    public static int LoadMaxRamMb()
+    {
+        if (File.Exists(MaxRamMbFile) &&
+            int.TryParse(File.ReadAllText(MaxRamMbFile).Trim(), out var value))
+        {
+            return Math.Clamp(value, 2048, 16384);
+        }
+
+        return 4096;
+    }
+
+    public static void SaveMaxRamMb(int maxRamMb)
+    {
+        Directory.CreateDirectory(SettingsDirectory);
+        File.WriteAllText(MaxRamMbFile, Math.Clamp(maxRamMb, 2048, 16384).ToString());
+    }
+
+    public static string LoadJavaMode()
+    {
+        if (File.Exists(JavaModeFile))
+        {
+            var mode = File.ReadAllText(JavaModeFile).Trim();
+            if (string.Equals(mode, "Custom", StringComparison.OrdinalIgnoreCase))
+            {
+                return "Custom";
+            }
+        }
+
+        return "Automatic";
+    }
+
+    public static void SaveJavaMode(string mode)
+    {
+        Directory.CreateDirectory(SettingsDirectory);
+        File.WriteAllText(JavaModeFile, string.Equals(mode, "Custom", StringComparison.OrdinalIgnoreCase) ? "Custom" : "Automatic");
+    }
+
+    public static string? LoadCustomJavaPath()
+    {
+        if (!File.Exists(CustomJavaPathFile))
+        {
+            return null;
+        }
+
+        var path = File.ReadAllText(CustomJavaPathFile).Trim();
+        return string.IsNullOrWhiteSpace(path) ? null : path;
+    }
+
+    public static void SaveCustomJavaPath(string path)
+    {
+        Directory.CreateDirectory(SettingsDirectory);
+        File.WriteAllText(CustomJavaPathFile, path);
     }
 }

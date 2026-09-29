@@ -20,8 +20,8 @@ public partial class LauncherView : UserControl
     private const string UpdateButtonText = "\u041e\u0411\u041d\u041e\u0412\u0418\u0422\u042c";
     private const string PlayButtonText = "\u0418\u0413\u0420\u0410\u0422\u042c";
     private const string PreparingButtonText = "\u041f\u041e\u0414\u0413\u041e\u0422\u041e\u0412\u041a\u0410...";
-    private const string StartingButtonText = "STARTING...";
-    private const string RunningButtonText = "RUNNING";
+    private const string StartingButtonText = "ЗАПУСК...";
+    private const string RunningButtonText = "ЗАПУЩЕНО";
 
     private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
@@ -196,7 +196,7 @@ public partial class LauncherView : UserControl
         _isInstallRunning = true;
         _preparationCancellation = new CancellationTokenSource();
         SetTechnicalActionsEnabled(false);
-        SetState(LauncherState.Preparing, "Preparing Light Factory...");
+        SetState(LauncherState.Preparing, "Подготовка игры...");
         InstallProgress.Value = 0;
         ToolTip.SetTip(LaunchStatus, null);
 
@@ -211,25 +211,25 @@ public partial class LauncherView : UserControl
                 Manifest = _manifest
             };
 
-            JavaStatusText.Text = "Waiting...";
+            JavaStatusText.Text = "Java";
             JavaStatusText.Foreground = Brushes.LightGreen;
-            MinecraftVersionText.Text = $"{profile.MinecraftVersion} - Waiting";
-            ForgeVersionText.Text = $"{profile.ForgeVersion} - Waiting";
+            MinecraftVersionText.Text = $"Minecraft {profile.MinecraftVersion}";
+            ForgeVersionText.Text = $"Forge {profile.ForgeVersion}";
 
             var progress = new Progress<GamePreparationStatus>(status =>
             {
                 InstallProgress.Value = Math.Clamp(status.OverallProgress, 0, 100);
-                ShowStatus(status.StatusText, status.Phase == GamePreparationPhase.Failed ? Brushes.IndianRed : Brushes.LightGreen);
-                JavaStatusText.Text = FormatComponentStatus("Java 8", status.JavaStatus);
+                ShowStatus(ToFriendlyPreparationStatus(status), status.Phase == GamePreparationPhase.Failed ? Brushes.IndianRed : Brushes.LightGreen);
+                JavaStatusText.Text = FormatComponentStatus("Java", status.JavaStatus);
                 JavaStatusText.Foreground = status.JavaStatus.Contains("Required", StringComparison.OrdinalIgnoreCase)
                     ? Brushes.Gold
                     : Brushes.LightGreen;
-                MinecraftVersionText.Text = FormatComponentStatus(profile.MinecraftVersion, status.MinecraftStatus);
-                ForgeVersionText.Text = FormatComponentStatus(profile.ForgeVersion, status.ForgeStatus);
+                MinecraftVersionText.Text = $"Minecraft {profile.MinecraftVersion}";
+                ForgeVersionText.Text = $"Forge {profile.ForgeVersion}";
 
                 if (!string.IsNullOrWhiteSpace(status.ModpackStatus))
                 {
-                    LaunchStatus.Text = $"{status.StatusText} Light Factory: {status.ModpackStatus}";
+                    LaunchStatus.Text = ToFriendlyPreparationStatus(status);
                 }
             });
 
@@ -241,7 +241,7 @@ public partial class LauncherView : UserControl
 
             if (!result.Success)
             {
-                SetState(LauncherState.Error, $"Preparation failed: {result.ErrorMessage ?? "Unknown error."}");
+                SetState(LauncherState.Error, "Не удалось подготовить игру.");
                 ToolTip.SetTip(LaunchStatus, result.DiagnosticText ?? result.ErrorMessage);
                 await LoadRuntimeStatusAsync();
                 return;
@@ -249,8 +249,27 @@ public partial class LauncherView : UserControl
 
             ToolTip.SetTip(LaunchStatus, null);
             await LoadRuntimeStatusAsync();
-            RefreshLauncherState("Ready to launch.");
-            await BuildLaunchPlanAndStartAsync(profile);
+            RefreshLauncherState("Готово к запуску");
+
+            var maxRamMb = LauncherSettings.LoadMaxRamMb();
+            var launchOptions = new GameLaunchOptions
+            {
+                MinimumRamMb = 1024,
+                MaximumRamMb = maxRamMb,
+                CustomJavaExecutable = string.Equals(LauncherSettings.LoadJavaMode(), "Custom", StringComparison.OrdinalIgnoreCase)
+                    ? LauncherSettings.LoadCustomJavaPath()
+                    : null,
+                Authentication = _session == null
+                    ? null
+                    : new MinecraftAuthContext
+                    {
+                        PlayerName = _session.Account.Nickname,
+                        Uuid = _session.Account.Id.ToString("N"),
+                        AccessToken = _session.AccessToken
+                    }
+            };
+
+            await BuildLaunchPlanAndStartAsync(profile, launchOptions);
         }
         finally
         {
@@ -262,19 +281,18 @@ public partial class LauncherView : UserControl
         }
     }
 
-    private async System.Threading.Tasks.Task BuildLaunchPlanAndStartAsync(GameProfile profile)
+    private async System.Threading.Tasks.Task BuildLaunchPlanAndStartAsync(GameProfile profile, GameLaunchOptions launchOptions)
     {
-        SetState(LauncherState.BuildingLaunchPlan, "Building Minecraft launch plan...");
-
-        var result = await _launchService.BuildLaunchPlanAsync(profile, new GameLaunchOptions());
+        var result = await _launchService.BuildLaunchPlanAsync(profile, launchOptions);
         if (result.Plan == null)
         {
-            SetState(LauncherState.LaunchFailed, result.ErrorMessage ?? "Launch plan could not be built.");
+            SetState(LauncherState.Installed, "Не удалось запустить Minecraft.");
             LaunchStatus.Foreground = Brushes.IndianRed;
+            ToolTip.SetTip(LaunchStatus, result.ErrorMessage);
             return;
         }
 
-        SetState(LauncherState.Starting, "Starting Minecraft...");
+        SetState(LauncherState.Starting, "Запуск...");
         _isGameStarting = true;
 
         var startResult = _processService.Start(result.Plan);
@@ -284,10 +302,10 @@ public partial class LauncherView : UserControl
         {
             case GameProcessStartStatus.Started:
                 _isGameRunning = true;
-                SetState(LauncherState.Running, $"Minecraft is running. Process ID: {startResult.ProcessId}");
+                SetState(LauncherState.Running, "Игра запущена");
                 break;
             case GameProcessStartStatus.AuthenticationRequired:
-                SetState(LauncherState.AuthenticationRequired, startResult.Message);
+                SetState(LauncherState.Installed, startResult.Message);
                 LaunchStatus.Foreground = Brushes.Gold;
                 ToolTip.SetTip(LaunchStatus, $"Launch plan built. Missing authentication: {string.Join(", ", result.Plan.MissingAuthenticationFields)}");
                 break;
@@ -296,7 +314,7 @@ public partial class LauncherView : UserControl
                 SetState(LauncherState.Running, startResult.Message);
                 break;
             default:
-                SetState(LauncherState.LaunchFailed, startResult.Message);
+                SetState(LauncherState.Installed, "Не удалось запустить Minecraft.");
                 LaunchStatus.Foreground = Brushes.IndianRed;
                 ToolTip.SetTip(LaunchStatus, result.Plan.ValidationErrors.Count == 0
                     ? startResult.Message
@@ -305,13 +323,14 @@ public partial class LauncherView : UserControl
         }
     }
 
+
     private void GameProcessService_ProcessExited(object? sender, GameProcessExitedEventArgs e)
     {
         Dispatcher.UIThread.Post(() =>
         {
             _isGameRunning = false;
             _isGameStarting = false;
-            SetState(LauncherState.Installed, $"Minecraft exited. Exit code: {e.ExitCode}");
+            SetState(LauncherState.Installed, "Готово к запуску");
         });
     }
 
@@ -369,29 +388,30 @@ public partial class LauncherView : UserControl
         var installationValid = IsInstallationValid();
         InstalledVersionText.Text = installedVersion ?? "-";
         LatestVersionText.Text = string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion;
+        VersionMetadataText.Text = $"Minecraft {GetMinecraftVersion()}  •  Forge {GetForgeVersion()}  •  v{(string.IsNullOrWhiteSpace(_manifest.PackVersion) ? "-" : _manifest.PackVersion)}";
         UpdateMinecraftRuntimeText();
         UpdateForgeRuntimeText();
 
         if (string.IsNullOrWhiteSpace(installedVersion) || !installationValid)
         {
-            SetState(LauncherState.NotInstalled, statusOverride ?? "Light Factory is not installed.");
+            SetState(LauncherState.NotInstalled, statusOverride ?? "Требуется установка");
             return;
         }
 
         var comparison = ComparePackVersions(installedVersion, _manifest.PackVersion);
         if (comparison < 0)
         {
-            SetState(LauncherState.UpdateAvailable, statusOverride ?? $"\u0414\u043e\u0441\u0442\u0443\u043f\u043d\u043e \u043e\u0431\u043d\u043e\u0432\u043b\u0435\u043d\u0438\u0435: {_manifest.PackVersion}");
+            SetState(LauncherState.UpdateAvailable, statusOverride ?? "Требуется обновление");
             return;
         }
 
         if (comparison == 0)
         {
-            SetState(LauncherState.Installed, statusOverride ?? $"Light Factory {_manifest.PackVersion} is installed.");
+            SetState(LauncherState.Installed, statusOverride ?? "Готово к запуску");
             return;
         }
 
-        SetState(LauncherState.Installed, statusOverride ?? $"Installed version {installedVersion} is newer than latest {_manifest.PackVersion}.");
+        SetState(LauncherState.Installed, statusOverride ?? "Готово к запуску");
     }
 
     private bool IsInstallationValid()
@@ -404,7 +424,7 @@ public partial class LauncherView : UserControl
 
     private async System.Threading.Tasks.Task LoadRuntimeStatusAsync()
     {
-        JavaStatusText.Text = "Checking...";
+        JavaStatusText.Text = "Проверка Java...";
         JavaStatusText.Foreground = Brushes.LightGreen;
         ToolTip.SetTip(JavaStatusText, null);
         InstallJavaButton.IsVisible = false;
@@ -446,14 +466,14 @@ public partial class LauncherView : UserControl
                 ? "unknown version"
                 : $"Java {detectedJava.Version}";
 
-            JavaStatusText.Text = $"{version} detected; Java 8 not found";
+            JavaStatusText.Text = $"{version}; нужна Java 8";
             JavaStatusText.Foreground = Brushes.Gold;
             ToolTip.SetTip(JavaStatusText, detectedJava.Path);
             InstallJavaButton.IsVisible = true;
             return;
         }
 
-        JavaStatusText.Text = "Java 8 required";
+        JavaStatusText.Text = "Требуется Java 8";
         JavaStatusText.Foreground = Brushes.IndianRed;
         ToolTip.SetTip(JavaStatusText, null);
         InstallJavaButton.IsVisible = true;
@@ -473,7 +493,7 @@ public partial class LauncherView : UserControl
 
         try
         {
-            JavaStatusText.Text = "Downloading Java...";
+            JavaStatusText.Text = "Загрузка Java...";
             JavaStatusText.Foreground = Brushes.LightGreen;
 
             var progress = new Progress<double>(value =>
@@ -489,13 +509,13 @@ public partial class LauncherView : UserControl
             var result = await _managedJavaService.InstallJava8Async(progress, phase);
             if (!result.Success)
             {
-                JavaStatusText.Text = result.ErrorMessage ?? "Java installation failed.";
+                JavaStatusText.Text = "Не удалось установить Java.";
                 JavaStatusText.Foreground = Brushes.IndianRed;
                 InstallJavaButton.IsVisible = true;
                 return;
             }
 
-            JavaStatusText.Text = "Checking Java...";
+            JavaStatusText.Text = "Проверка Java...";
             JavaStatusText.Foreground = Brushes.LightGreen;
             await LoadRuntimeStatusAsync();
         }
@@ -521,7 +541,7 @@ public partial class LauncherView : UserControl
         try
         {
             var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
-            MinecraftVersionText.Text = $"{minecraftVersion} - Installing";
+            MinecraftVersionText.Text = $"Minecraft {minecraftVersion}: установка";
             ToolTip.SetTip(MinecraftVersionText, null);
 
             var progress = new Progress<double>(value =>
@@ -538,7 +558,7 @@ public partial class LauncherView : UserControl
             if (!result.Success)
             {
                 _minecraftRuntimeReady = false;
-                MinecraftVersionText.Text = result.ErrorMessage ?? "Minecraft installation failed.";
+                MinecraftVersionText.Text = "Не удалось установить Minecraft.";
                 ToolTip.SetTip(MinecraftVersionText, result.DiagnosticText ?? result.ErrorMessage);
                 InstallMinecraftButton.IsVisible = true;
                 return;
@@ -569,14 +589,14 @@ public partial class LauncherView : UserControl
 
         if (!runtimeStatus.CompatibleJavaFound || runtimeStatus.CompatibleJava == null)
         {
-            ForgeVersionText.Text = "Java 8 required";
+            ForgeVersionText.Text = "Требуется Java 8";
             InstallForgeButton.IsVisible = true;
             return;
         }
 
         if (!runtimeStatus.MinecraftInstalled)
         {
-            ForgeVersionText.Text = "Minecraft required";
+            ForgeVersionText.Text = "Требуется Minecraft";
             InstallForgeButton.IsVisible = true;
             return;
         }
@@ -590,7 +610,7 @@ public partial class LauncherView : UserControl
         {
             var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
             var forgeVersion = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
-            ForgeVersionText.Text = $"{forgeVersion} - Installing";
+            ForgeVersionText.Text = $"Forge {forgeVersion}: установка";
             ToolTip.SetTip(ForgeVersionText, null);
 
             var progress = new Progress<double>(value =>
@@ -613,7 +633,7 @@ public partial class LauncherView : UserControl
             if (!result.Success)
             {
                 _forgeRuntimeReady = false;
-                ForgeVersionText.Text = result.ErrorMessage ?? "Forge installation failed.";
+                ForgeVersionText.Text = "Не удалось установить Forge.";
                 ToolTip.SetTip(ForgeVersionText, result.DiagnosticText ?? result.ErrorMessage);
                 InstallForgeButton.IsVisible = true;
                 return;
@@ -634,23 +654,23 @@ public partial class LauncherView : UserControl
 
     private void UpdateMinecraftRuntimeText()
     {
-        var minecraftVersion = string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+        var minecraftVersion = GetMinecraftVersion();
         MinecraftVersionText.Text = _minecraftRuntimeReady switch
         {
-            true => $"{minecraftVersion} - Ready",
-            false => $"{minecraftVersion} - Not installed",
-            _ => minecraftVersion
+            true => $"Minecraft {minecraftVersion}",
+            false => $"Minecraft {minecraftVersion}: требуется",
+            _ => $"Minecraft {minecraftVersion}"
         };
     }
 
     private void UpdateForgeRuntimeText()
     {
-        var forgeVersion = string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
+        var forgeVersion = GetForgeVersion();
         ForgeVersionText.Text = _forgeRuntimeReady switch
         {
-            true => $"{forgeVersion} - Ready",
-            false => $"{forgeVersion} - Not installed",
-            _ => forgeVersion
+            true => $"Forge {forgeVersion}",
+            false => $"Forge {forgeVersion}: требуется",
+            _ => $"Forge {forgeVersion}"
         };
     }
 
@@ -663,7 +683,6 @@ public partial class LauncherView : UserControl
             state != LauncherState.Verifying &&
             state != LauncherState.Installing &&
             state != LauncherState.Preparing &&
-            state != LauncherState.BuildingLaunchPlan &&
             state != LauncherState.Starting &&
             state != LauncherState.Running;
 
@@ -675,7 +694,7 @@ public partial class LauncherView : UserControl
                 ShowStatus(status, Brushes.IndianRed);
                 break;
             case LauncherState.UpdateAvailable:
-                MainActionButton.Content = PlayButtonText;
+                MainActionButton.Content = UpdateButtonText;
                 ShowStatus(status, Brushes.Gold);
                 break;
             case LauncherState.Downloading:
@@ -694,10 +713,6 @@ public partial class LauncherView : UserControl
                 MainActionButton.Content = PreparingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
                 break;
-            case LauncherState.BuildingLaunchPlan:
-                MainActionButton.Content = StartingButtonText;
-                ShowStatus(status, Brushes.LightGreen);
-                break;
             case LauncherState.Starting:
                 MainActionButton.Content = StartingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
@@ -711,16 +726,6 @@ public partial class LauncherView : UserControl
                 MainActionButton.Content = PlayButtonText;
                 InstallProgress.Value = 100;
                 ShowStatus(status, Brushes.LightGreen);
-                break;
-            case LauncherState.AuthenticationRequired:
-                MainActionButton.Content = PlayButtonText;
-                InstallProgress.Value = 100;
-                ShowStatus(status, Brushes.Gold);
-                break;
-            case LauncherState.LaunchFailed:
-                MainActionButton.Content = PlayButtonText;
-                InstallProgress.Value = 100;
-                ShowStatus(status, Brushes.IndianRed);
                 break;
             case LauncherState.Error:
                 MainActionButton.Content = PlayButtonText;
@@ -739,8 +744,8 @@ public partial class LauncherView : UserControl
     private static string FormatComponentStatus(string label, string status)
     {
         return string.IsNullOrWhiteSpace(status) || status == "Waiting..."
-            ? $"{label} - Waiting"
-            : $"{label} - {status}";
+            ? label
+            : $"{label}: {status}";
     }
 
     private void ShowLaunchStatus(string message, bool success)
@@ -782,6 +787,35 @@ public partial class LauncherView : UserControl
         {
             PropertyNameCaseInsensitive = true
         }) ?? new ModpackManifest();
+    }
+
+    private string GetMinecraftVersion()
+    {
+        return string.IsNullOrWhiteSpace(_manifest.MinecraftVersion) ? "1.12.2" : _manifest.MinecraftVersion;
+    }
+
+    private string GetForgeVersion()
+    {
+        return string.IsNullOrWhiteSpace(_manifest.ForgeVersion) ? "14.23.5.2860" : _manifest.ForgeVersion;
+    }
+
+    private static string ToFriendlyPreparationStatus(GamePreparationStatus status)
+    {
+        return status.Phase switch
+        {
+            GamePreparationPhase.CheckingEnvironment => "Проверка файлов...",
+            GamePreparationPhase.PreparingJava => "Подготовка Java...",
+            GamePreparationPhase.PreparingMinecraft => "Подготовка Minecraft...",
+            GamePreparationPhase.PreparingForge => "Подготовка Forge...",
+            GamePreparationPhase.CheckingModpack => "Проверка сборки...",
+            GamePreparationPhase.DownloadingModpack => "Загрузка сборки...",
+            GamePreparationPhase.InstallingModpack => "Установка сборки...",
+            GamePreparationPhase.UpdatingModpack => "Обновление сборки...",
+            GamePreparationPhase.FinalValidation => "Проверка файлов...",
+            GamePreparationPhase.ReadyToLaunch => "Готово к запуску",
+            GamePreparationPhase.Failed => "Не удалось подготовить игру.",
+            _ => "Подготовка игры..."
+        };
     }
 
     private static int ComparePackVersions(string installedVersion, string latestVersion)
@@ -837,12 +871,9 @@ public partial class LauncherView : UserControl
         Verifying,
         Installing,
         Preparing,
-        BuildingLaunchPlan,
         Starting,
         Running,
         Installed,
-        AuthenticationRequired,
-        LaunchFailed,
         Error
     }
 }

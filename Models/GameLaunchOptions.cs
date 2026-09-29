@@ -7,4 +7,6 @@ public sealed class GameLaunchOptions
     public int MaximumRamMb { get; set; } = 4096;
 
     public MinecraftAuthContext? Authentication { get; set; }
+
+    public string? CustomJavaExecutable { get; set; }
 }
