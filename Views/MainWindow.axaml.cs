@@ -11,6 +11,7 @@ namespace LiteFactoryLauncher.Views;
 public partial class MainWindow : Window
 {
     private readonly LiteFactoryAuthService _authService = new();
+    private readonly CredentialStorageService _credentialStorage = new();
     private LiteFactorySession? _session;
     private AuthState _authState = AuthState.LoggedOut;
     private CancellationTokenSource? _authCancellation;
@@ -18,6 +19,7 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        LoadRememberedCredentials();
     }
 
     private async void LoginButton_Click(object? sender, RoutedEventArgs e)
@@ -46,6 +48,7 @@ public partial class MainWindow : Window
                 return;
             }
 
+            UpdateRememberedCredentials(login, password);
             EnterLauncher(result.Session);
         }
         finally
@@ -186,6 +189,7 @@ public partial class MainWindow : Window
         RegisterNicknameBox.IsEnabled = !busy;
         RegisterPasswordBox.IsEnabled = !busy;
         RegisterConfirmPasswordBox.IsEnabled = !busy;
+        RememberPasswordCheckBox.IsEnabled = !busy;
 
         if (!string.IsNullOrWhiteSpace(status))
         {
@@ -197,6 +201,51 @@ public partial class MainWindow : Window
     {
         AuthStatus.Foreground = success ? Brushes.LightGreen : Brushes.IndianRed;
         AuthStatus.Text = message;
+    }
+
+    private void LoadRememberedCredentials()
+    {
+        try
+        {
+            var credentials = _credentialStorage.Load();
+            if (credentials == null)
+            {
+                return;
+            }
+
+            LoginBox.Text = credentials.Login;
+            PasswordBox.Text = credentials.Password;
+            RememberPasswordCheckBox.IsChecked = true;
+        }
+        catch
+        {
+            try
+            {
+                _credentialStorage.Delete();
+            }
+            catch
+            {
+                // Remembered credentials are optional; login must stay usable.
+            }
+        }
+    }
+
+    private void UpdateRememberedCredentials(string login, string password)
+    {
+        try
+        {
+            if (RememberPasswordCheckBox.IsChecked == true)
+            {
+                _credentialStorage.Save(login, password);
+                return;
+            }
+
+            _credentialStorage.Delete();
+        }
+        catch
+        {
+            // Remembering credentials must not block successful login.
+        }
     }
 
     private enum AuthState
