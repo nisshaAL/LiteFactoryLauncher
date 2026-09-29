@@ -43,7 +43,7 @@ public sealed class GameProcessService
         var validationError = ValidateExecutablePlan(plan);
         if (validationError != null)
         {
-            Log($"Game process start refused: {validationError.Status} - {validationError.Message}");
+            LogPhase("LaunchRefused", $"Status={validationError.Status}; Message={validationError.Message}");
             return validationError;
         }
 
@@ -54,6 +54,7 @@ public sealed class GameProcessService
 
             if (!process.Start())
             {
+                LogPhase("ProcessStartFailure", "Process.Start returned false.");
                 return GameProcessStartResult.Error(GameProcessStartStatus.StartFailed, "Could not start Java process.");
             }
 
@@ -65,12 +66,12 @@ public sealed class GameProcessService
                 _runningProcess = process;
             }
 
-            Log($"Game process started. ProcessId={process.Id}");
+            LogPhase("Running", $"ProcessId={process.Id}");
             return GameProcessStartResult.Started(process.Id);
         }
         catch (Exception ex) when (ex is InvalidOperationException or IOException or UnauthorizedAccessException)
         {
-            Log($"Game process start failed:{Environment.NewLine}{ex}");
+            LogPhase("ProcessStartFailure", ex.ToString());
             return GameProcessStartResult.Error(GameProcessStartStatus.StartFailed, $"Could not start Minecraft: {ex.Message}");
         }
     }
@@ -187,7 +188,7 @@ public sealed class GameProcessService
             }
         }
 
-        Log($"Game process exited. ProcessId={processId}, ExitCode={exitCode}");
+        LogPhase("ProcessExited", $"ProcessId={processId}, ExitCode={exitCode}");
         ProcessExited?.Invoke(this, new GameProcessExitedEventArgs(processId, exitCode));
         process.Dispose();
     }
@@ -218,15 +219,18 @@ public sealed class GameProcessService
 
     private static void LogStart(GameLaunchPlan plan)
     {
-        Log(
-            $"Game process launch requested.{Environment.NewLine}" +
+        LogPhase(
+            "StartingProcess",
             $"Java={plan.JavaExecutable}{Environment.NewLine}" +
             $"WorkingDirectory={plan.WorkingDirectory}{Environment.NewLine}" +
             $"GameDirectory={plan.GameDirectory}{Environment.NewLine}" +
             $"MainClass={plan.MainClass}{Environment.NewLine}" +
             $"ClasspathEntries={plan.ClasspathEntries.Count}{Environment.NewLine}" +
-            $"JvmArguments={string.Join(" ", SanitizeArguments(plan.JvmArguments))}{Environment.NewLine}" +
-            $"GameArguments={string.Join(" ", SanitizeArguments(plan.GameArguments))}");
+            $"NativesDirectory={plan.NativesDirectory}{Environment.NewLine}" +
+            $"AssetsRoot={plan.AssetsRoot}{Environment.NewLine}" +
+            $"AssetsIndex={plan.AssetsIndexName}{Environment.NewLine}" +
+            $"JvmMemoryArguments={string.Join(" ", GetMemoryArguments(plan.JvmArguments))}{Environment.NewLine}" +
+            $"GameArgumentsCount={plan.GameArguments.Count}");
     }
 
     private static void LogProcessOutput(string streamName, string? data)
@@ -236,40 +240,40 @@ public sealed class GameProcessService
             return;
         }
 
-        Log($"Minecraft {streamName}: {SanitizeLine(data)}");
+        LogPhase($"Minecraft {streamName}", RedactSensitiveText(data));
     }
 
-    private static string[] SanitizeArguments(System.Collections.Generic.IReadOnlyList<string> arguments)
+    private static string[] GetMemoryArguments(System.Collections.Generic.IReadOnlyList<string> arguments)
     {
-        var sanitized = new string[arguments.Count];
-        var redactNext = false;
-        for (var index = 0; index < arguments.Count; index++)
-        {
-            var argument = arguments[index];
-            if (redactNext)
-            {
-                sanitized[index] = "<redacted>";
-                redactNext = false;
-                continue;
-            }
+        return arguments
+            .Where(argument =>
+                argument.StartsWith("-Xms", StringComparison.OrdinalIgnoreCase) ||
+                argument.StartsWith("-Xmx", StringComparison.OrdinalIgnoreCase))
+            .ToArray();
+    }
 
-            sanitized[index] = SanitizeLine(argument);
-            if (argument.Contains("accessToken", StringComparison.OrdinalIgnoreCase) ||
-                argument.Contains("access_token", StringComparison.OrdinalIgnoreCase) ||
-                argument.Contains("auth_access_token", StringComparison.OrdinalIgnoreCase))
-            {
-                redactNext = true;
-            }
+    private static string RedactSensitiveText(string value)
+    {
+        if (value.Contains("Bearer ", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("auth_access_token", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("accessToken", StringComparison.OrdinalIgnoreCase) ||
+            value.Contains("access_token", StringComparison.OrdinalIgnoreCase))
+        {
+            return "<redacted line containing authentication token>";
         }
 
-        return sanitized;
+        var redacted = value
+            .Replace("${auth_access_token}", "<auth_access_token>", StringComparison.OrdinalIgnoreCase)
+            .Replace("auth_access_token", "<auth_access_token>", StringComparison.OrdinalIgnoreCase)
+            .Replace("accessToken", "<accessToken>", StringComparison.OrdinalIgnoreCase)
+            .Replace("access_token", "<access_token>", StringComparison.OrdinalIgnoreCase);
+
+        return redacted;
     }
 
-    private static string SanitizeLine(string value)
+    private static void LogPhase(string phase, string message)
     {
-        return value
-            .Replace("${auth_access_token}", "<auth_access_token>", StringComparison.OrdinalIgnoreCase)
-            .Replace("auth_access_token", "<auth_access_token>", StringComparison.OrdinalIgnoreCase);
+        Log($"Phase={phase}{Environment.NewLine}{RedactSensitiveText(message)}");
     }
 
     private static void Log(string message)

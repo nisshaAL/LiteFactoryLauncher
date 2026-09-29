@@ -264,10 +264,12 @@ public partial class LauncherView : UserControl
 
     private async System.Threading.Tasks.Task BuildLaunchPlanAndStartAsync(GameProfile profile)
     {
+        SetState(LauncherState.BuildingLaunchPlan, "Building Minecraft launch plan...");
+
         var result = await _launchService.BuildLaunchPlanAsync(profile, new GameLaunchOptions());
         if (result.Plan == null)
         {
-            SetState(LauncherState.Installed, result.ErrorMessage ?? "Launch plan could not be built.");
+            SetState(LauncherState.LaunchFailed, result.ErrorMessage ?? "Launch plan could not be built.");
             LaunchStatus.Foreground = Brushes.IndianRed;
             return;
         }
@@ -285,7 +287,7 @@ public partial class LauncherView : UserControl
                 SetState(LauncherState.Running, $"Minecraft is running. Process ID: {startResult.ProcessId}");
                 break;
             case GameProcessStartStatus.AuthenticationRequired:
-                SetState(LauncherState.Installed, startResult.Message);
+                SetState(LauncherState.AuthenticationRequired, startResult.Message);
                 LaunchStatus.Foreground = Brushes.Gold;
                 ToolTip.SetTip(LaunchStatus, $"Launch plan built. Missing authentication: {string.Join(", ", result.Plan.MissingAuthenticationFields)}");
                 break;
@@ -294,7 +296,7 @@ public partial class LauncherView : UserControl
                 SetState(LauncherState.Running, startResult.Message);
                 break;
             default:
-                SetState(LauncherState.Installed, startResult.Message);
+                SetState(LauncherState.LaunchFailed, startResult.Message);
                 LaunchStatus.Foreground = Brushes.IndianRed;
                 ToolTip.SetTip(LaunchStatus, result.Plan.ValidationErrors.Count == 0
                     ? startResult.Message
@@ -661,6 +663,7 @@ public partial class LauncherView : UserControl
             state != LauncherState.Verifying &&
             state != LauncherState.Installing &&
             state != LauncherState.Preparing &&
+            state != LauncherState.BuildingLaunchPlan &&
             state != LauncherState.Starting &&
             state != LauncherState.Running;
 
@@ -691,6 +694,10 @@ public partial class LauncherView : UserControl
                 MainActionButton.Content = PreparingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
                 break;
+            case LauncherState.BuildingLaunchPlan:
+                MainActionButton.Content = StartingButtonText;
+                ShowStatus(status, Brushes.LightGreen);
+                break;
             case LauncherState.Starting:
                 MainActionButton.Content = StartingButtonText;
                 ShowStatus(status, Brushes.LightGreen);
@@ -704,6 +711,16 @@ public partial class LauncherView : UserControl
                 MainActionButton.Content = PlayButtonText;
                 InstallProgress.Value = 100;
                 ShowStatus(status, Brushes.LightGreen);
+                break;
+            case LauncherState.AuthenticationRequired:
+                MainActionButton.Content = PlayButtonText;
+                InstallProgress.Value = 100;
+                ShowStatus(status, Brushes.Gold);
+                break;
+            case LauncherState.LaunchFailed:
+                MainActionButton.Content = PlayButtonText;
+                InstallProgress.Value = 100;
+                ShowStatus(status, Brushes.IndianRed);
                 break;
             case LauncherState.Error:
                 MainActionButton.Content = PlayButtonText;
@@ -820,9 +837,12 @@ public partial class LauncherView : UserControl
         Verifying,
         Installing,
         Preparing,
+        BuildingLaunchPlan,
         Starting,
         Running,
         Installed,
+        AuthenticationRequired,
+        LaunchFailed,
         Error
     }
 }

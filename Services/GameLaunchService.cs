@@ -252,6 +252,12 @@ public sealed class GameLaunchService
                 plan.ValidationErrors.Add($"Launch argument contains unresolved token: {argument}");
             }
         }
+
+        if (!string.IsNullOrWhiteSpace(plan.ForgeVersion) &&
+            !ContainsArgumentPair(plan.GameArguments, "--tweakClass", "net.minecraftforge.fml.common.launcher.FMLTweaker"))
+        {
+            plan.ValidationErrors.Add("Forge launch arguments do not contain the required FMLTweaker tweakClass.");
+        }
     }
 
     private static void FinalizeValidation(GameLaunchPlan plan)
@@ -502,8 +508,10 @@ public sealed class GameLaunchService
             .AppendLine($"Assets index: {plan.AssetsIndexName}")
             .AppendLine($"Version type: {plan.VersionType}")
             .AppendLine($"Classpath entries: {plan.ClasspathEntries.Count}")
-            .AppendLine($"JVM arguments: {string.Join(" ", RedactArgumentList(plan.JvmArguments))}")
-            .AppendLine($"Game arguments: {string.Join(" ", RedactArgumentList(plan.GameArguments))}");
+            .AppendLine($"JVM memory arguments: {string.Join(" ", GetMemoryArguments(plan.JvmArguments))}")
+            .AppendLine($"Game arguments count: {plan.GameArguments.Count}")
+            .AppendLine($"Forge tweakClass present: {ContainsArgumentPair(plan.GameArguments, "--tweakClass", "net.minecraftforge.fml.common.launcher.FMLTweaker")}")
+            .AppendLine($"Authentication arguments present: {ContainsArgument(plan.GameArguments, "--username") && ContainsArgument(plan.GameArguments, "--uuid") && ContainsArgument(plan.GameArguments, "--accessToken")}");
 
         if (plan.ValidationErrors.Count > 0)
         {
@@ -518,29 +526,35 @@ public sealed class GameLaunchService
         Log(log.ToString());
     }
 
-    private static IEnumerable<string> RedactArgumentList(IReadOnlyList<string> arguments)
+    private static IEnumerable<string> GetMemoryArguments(IReadOnlyList<string> arguments)
     {
-        var redactNext = false;
         foreach (var argument in arguments)
         {
-            if (redactNext)
-            {
-                yield return "<redacted>";
-                redactNext = false;
-                continue;
-            }
-
-            if (argument.Contains("access_token", StringComparison.OrdinalIgnoreCase) ||
-                argument.Contains("auth_access_token", StringComparison.OrdinalIgnoreCase) ||
-                argument.Contains("accessToken", StringComparison.OrdinalIgnoreCase))
+            if (argument.StartsWith("-Xms", StringComparison.OrdinalIgnoreCase) ||
+                argument.StartsWith("-Xmx", StringComparison.OrdinalIgnoreCase))
             {
                 yield return argument;
-                redactNext = true;
-                continue;
             }
-
-            yield return argument;
         }
+    }
+
+    private static bool ContainsArgument(IReadOnlyList<string> arguments, string name)
+    {
+        return arguments.Any(argument => string.Equals(argument, name, StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static bool ContainsArgumentPair(IReadOnlyList<string> arguments, string name, string value)
+    {
+        for (var index = 0; index < arguments.Count - 1; index++)
+        {
+            if (string.Equals(arguments[index], name, StringComparison.OrdinalIgnoreCase) &&
+                string.Equals(arguments[index + 1], value, StringComparison.Ordinal))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static void Log(string message)
