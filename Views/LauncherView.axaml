@@ -32,13 +32,22 @@
             FontSize="18"
             Click="SettingsButton_Click"/>
 
-    <TextBlock Text="admin"
+    <TextBlock Name="AccountNameText"
+               Text=""
                Foreground="#DADCE2"
                VerticalAlignment="Center"/>
 
     <Ellipse Width="9"
              Height="9"
              Fill="#62E87C"/>
+
+    <Button Name="LogoutButton"
+            Content="LOGOUT"
+            Height="30"
+            FontSize="10"
+            FontWeight="Bold"
+            HorizontalContentAlignment="Center"
+            Click="LogoutButton_Click"/>
 
 </StackPanel>
 

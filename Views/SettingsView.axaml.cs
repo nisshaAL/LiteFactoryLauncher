@@ -2,6 +2,7 @@ using Avalonia.Controls;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using LiteFactoryLauncher.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -9,8 +10,18 @@ namespace LiteFactoryLauncher.Views;
 
 public partial class SettingsView : UserControl
 {
+    private readonly LiteFactorySession? _session;
+    private readonly Action? _logout;
+
     public SettingsView()
+        : this(null, null)
     {
+    }
+
+    public SettingsView(LiteFactorySession? session, Action? logout)
+    {
+        _session = session;
+        _logout = logout;
         InitializeComponent();
 
         GamePathBox.Text = LauncherSettings.LoadGamePath() ?? "";
@@ -18,11 +29,11 @@ public partial class SettingsView : UserControl
 
     private void BackButton_Click(object? sender, RoutedEventArgs e)
     {
-        var window = TopLevel.GetTopLevel(this) as Window;
+        var window = TopLevel.GetTopLevel(this) as MainWindow;
 
         if (window != null)
         {
-            window.Content = new LauncherView();
+            window.ShowLauncher(_session, _logout);
         }
     }
 

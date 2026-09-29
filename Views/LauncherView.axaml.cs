@@ -29,6 +29,8 @@ public partial class LauncherView : UserControl
     private readonly ForgeRuntimeService _forgeRuntimeService = new();
     private readonly GamePreparationService _preparationService = new();
     private readonly GameLaunchService _launchService = new();
+    private readonly LiteFactorySession? _session;
+    private readonly Action? _logout;
     private ModpackManifest _manifest;
     private GameRuntimeStatus? _runtimeStatus;
     private LauncherState _state;
@@ -42,9 +44,17 @@ public partial class LauncherView : UserControl
     private CancellationTokenSource? _preparationCancellation;
 
     public LauncherView()
+        : this(null, null)
     {
+    }
+
+    public LauncherView(LiteFactorySession? session, Action? logout)
+    {
+        _session = session;
+        _logout = logout;
         InitializeComponent();
 
+        AccountNameText.Text = _session?.Account.Nickname ?? "";
         _manifest = LoadBundledManifest();
         RefreshLauncherState();
         _ = LoadRuntimeStatusAsync();
@@ -306,12 +316,17 @@ public partial class LauncherView : UserControl
 
     private void SettingsButton_Click(object? sender, RoutedEventArgs e)
     {
-        var window = TopLevel.GetTopLevel(this) as Window;
+        var window = TopLevel.GetTopLevel(this) as MainWindow;
 
         if (window != null)
         {
-            window.Content = new SettingsView();
+            window.ShowSettings(_session, _logout);
         }
+    }
+
+    private void LogoutButton_Click(object? sender, RoutedEventArgs e)
+    {
+        _logout?.Invoke();
     }
 
     private void RefreshLauncherState(string? statusOverride = null)
