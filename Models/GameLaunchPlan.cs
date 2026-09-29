@@ -32,6 +32,8 @@ public sealed class GameLaunchPlan
 
     public string AssetsIndexName { get; set; } = "";
 
+    public string VersionType { get; set; } = "";
+
     public GameLaunchValidationState ValidationState { get; set; } = GameLaunchValidationState.RuntimeInvalid;
 
     public List<string> ValidationErrors { get; } = new();

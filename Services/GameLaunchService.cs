@@ -92,6 +92,7 @@ public sealed class GameLaunchService
             plan.ForgeProfileId = merged.Id;
             plan.MainClass = merged.MainClass;
             plan.AssetsIndexName = merged.AssetsIndexName;
+            plan.VersionType = merged.VersionType;
 
             if (string.IsNullOrWhiteSpace(plan.MainClass))
             {
@@ -177,6 +178,7 @@ public sealed class GameLaunchService
             "${game_directory}" => plan.GameDirectory,
             "${assets_root}" => plan.AssetsRoot,
             "${assets_index_name}" => plan.AssetsIndexName,
+            "${version_type}" => string.IsNullOrWhiteSpace(plan.VersionType) ? "release" : plan.VersionType,
             "${user_type}" => authentication?.UserType ?? "msa",
             "${user_properties}" => authentication?.UserProperties ?? "{}",
             "${auth_player_name}" => ResolveAuthValue(plan, authentication?.PlayerName, "auth_player_name"),
@@ -242,6 +244,14 @@ public sealed class GameLaunchService
         {
             plan.ValidationErrors.Add($"Light Factory game directory does not exist: {plan.GameDirectory}");
         }
+
+        foreach (var argument in plan.GameArguments.Concat(plan.JvmArguments))
+        {
+            if (argument.Contains("${", StringComparison.Ordinal))
+            {
+                plan.ValidationErrors.Add($"Launch argument contains unresolved token: {argument}");
+            }
+        }
     }
 
     private static void FinalizeValidation(GameLaunchPlan plan)
@@ -278,11 +288,17 @@ public sealed class GameLaunchService
             assetsIndexName = GetAssetIndexName(vanilla);
         }
 
+        var versionType = GetString(forge, "type");
+        if (string.IsNullOrWhiteSpace(versionType))
+        {
+            versionType = GetString(vanilla, "type");
+        }
+
         var libraries = new List<JsonElement>();
         AddLibraries(vanilla, libraries);
         AddLibraries(forge, libraries);
 
-        return new MergedProfile(id, mainClass, minecraftArguments, assetsIndexName, libraries);
+        return new MergedProfile(id, mainClass, minecraftArguments, assetsIndexName, versionType, libraries);
     }
 
     private static void AddLibraries(JsonElement profile, List<JsonElement> libraries)
@@ -484,6 +500,7 @@ public sealed class GameLaunchService
             .AppendLine($"Natives directory: {plan.NativesDirectory}")
             .AppendLine($"Assets root: {plan.AssetsRoot}")
             .AppendLine($"Assets index: {plan.AssetsIndexName}")
+            .AppendLine($"Version type: {plan.VersionType}")
             .AppendLine($"Classpath entries: {plan.ClasspathEntries.Count}")
             .AppendLine($"JVM arguments: {string.Join(" ", RedactArgumentList(plan.JvmArguments))}")
             .AppendLine($"Game arguments: {string.Join(" ", RedactArgumentList(plan.GameArguments))}");
@@ -514,7 +531,8 @@ public sealed class GameLaunchService
             }
 
             if (argument.Contains("access_token", StringComparison.OrdinalIgnoreCase) ||
-                argument.Contains("auth_access_token", StringComparison.OrdinalIgnoreCase))
+                argument.Contains("auth_access_token", StringComparison.OrdinalIgnoreCase) ||
+                argument.Contains("accessToken", StringComparison.OrdinalIgnoreCase))
             {
                 yield return argument;
                 redactNext = true;
@@ -547,5 +565,6 @@ public sealed class GameLaunchService
         string MainClass,
         string MinecraftArguments,
         string AssetsIndexName,
+        string VersionType,
         IReadOnlyList<JsonElement> Libraries);
 }
