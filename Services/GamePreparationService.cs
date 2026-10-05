@@ -23,6 +23,7 @@ public sealed class GamePreparationService
     private readonly RemoteManifestService _remoteManifestService = new();
     private readonly ModpackDownloadService _downloadService = new();
     private readonly ModpackInstaller _installer = new();
+    private readonly MinecraftServerListService _serverListService = new();
 
     public async Task<GamePreparationResult> PrepareAsync(
         GameProfile profile,
@@ -246,6 +247,12 @@ public sealed class GamePreparationService
             if (!IsModpackInstallationValid(finalInstallDirectory) || finalVersionComparison < 0)
             {
                 return Fail(progress, status, GamePreparationPhase.FinalValidation, "Final validation failed: Light Factory is not current.", manifest);
+            }
+
+            var serverListResult = _serverListService.EnsureLightFactoryServer(finalInstallDirectory);
+            if (!serverListResult.Success)
+            {
+                Log($"[ServerList] Warning: {serverListResult.Message}");
             }
 
             status.JavaStatus = "Ready";
