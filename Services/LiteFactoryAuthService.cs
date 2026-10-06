@@ -12,7 +12,11 @@ namespace LiteFactoryLauncher.Services;
 
 public sealed class LiteFactoryAuthService
 {
-    public static readonly Uri DefaultBaseAddress = new("http://localhost:5011");
+    private const string ApiBaseUrlEnvironmentVariable = "LITEFACTORY_API_BASE_URL";
+    private const string ProductionBaseUrl = "https://litefactoryapi.onrender.com";
+    private static readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(60);
+
+    public static readonly Uri DefaultBaseAddress = ResolveBaseAddress();
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -22,7 +26,7 @@ public sealed class LiteFactoryAuthService
     private readonly HttpClient _httpClient;
 
     public LiteFactoryAuthService()
-        : this(new HttpClient { BaseAddress = DefaultBaseAddress, Timeout = TimeSpan.FromSeconds(10) })
+        : this(new HttpClient { BaseAddress = DefaultBaseAddress, Timeout = RequestTimeout })
     {
     }
 
@@ -145,6 +149,27 @@ public sealed class LiteFactoryAuthService
         {
             return fallback;
         }
+    }
+
+    private static Uri ResolveBaseAddress()
+    {
+        var configuredBaseUrl = Environment.GetEnvironmentVariable(ApiBaseUrlEnvironmentVariable);
+        var baseUrl = string.IsNullOrWhiteSpace(configuredBaseUrl)
+            ? ProductionBaseUrl
+            : configuredBaseUrl.Trim();
+
+        if (!Uri.TryCreate(EnsureTrailingSlash(baseUrl), UriKind.Absolute, out var uri) ||
+            (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+        {
+            throw new InvalidOperationException("LiteFactory API base URL must be an absolute HTTP or HTTPS URL.");
+        }
+
+        return uri;
+    }
+
+    private static string EnsureTrailingSlash(string value)
+    {
+        return value.EndsWith("/", StringComparison.Ordinal) ? value : $"{value}/";
     }
 
     private sealed record LoginRequest(string Login, string Password);
