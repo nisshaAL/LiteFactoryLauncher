@@ -303,6 +303,7 @@ public partial class LauncherView : UserControl
             case GameProcessStartStatus.Started:
                 _isGameRunning = true;
                 SetState(LauncherState.Running, "Игра запущена");
+                CloseLauncherAfterGameStart();
                 break;
             case GameProcessStartStatus.AuthenticationRequired:
                 SetState(LauncherState.Installed, startResult.Message);
@@ -320,6 +321,14 @@ public partial class LauncherView : UserControl
                     ? startResult.Message
                     : string.Join(Environment.NewLine, result.Plan.ValidationErrors));
                 break;
+        }
+    }
+
+    private void CloseLauncherAfterGameStart()
+    {
+        if (TopLevel.GetTopLevel(this) is Window window)
+        {
+            window.Close();
         }
     }
 

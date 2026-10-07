@@ -2,8 +2,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              x:Class="LiteFactoryLauncher.App"
              xmlns:local="using:LiteFactoryLauncher"
-             RequestedThemeVariant="Default">
-             <!-- "Default" ThemeVariant follows system theme variant. "Dark" or "Light" are other available options. -->
+             RequestedThemeVariant="Dark">
+             <!-- Keep launcher styling independent from the Windows user's theme variant. -->
 
     <Application.DataTemplates>
         <local:ViewLocator />
@@ -11,5 +11,30 @@
 
     <Application.Styles>
         <FluentTheme />
+        <Style Selector="Button">
+            <Setter Property="Background" Value="#F59E0B" />
+            <Setter Property="Foreground" Value="#180D04" />
+            <Setter Property="BorderBrush" Value="#D78311" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="HorizontalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="Button:pointerover">
+            <Setter Property="Background" Value="#FFB347" />
+            <Setter Property="Foreground" Value="#180D04" />
+            <Setter Property="BorderBrush" Value="#F59E0B" />
+        </Style>
+        <Style Selector="Button:pressed">
+            <Setter Property="Background" Value="#C56A08" />
+            <Setter Property="Foreground" Value="#180D04" />
+            <Setter Property="BorderBrush" Value="#8A4B07" />
+        </Style>
+        <Style Selector="Button:disabled">
+            <Setter Property="Background" Value="#252932" />
+            <Setter Property="Foreground" Value="#8D95A5" />
+            <Setter Property="BorderBrush" Value="#303640" />
+            <Setter Property="Opacity" Value="0.72" />
+        </Style>
     </Application.Styles>
 </Application>

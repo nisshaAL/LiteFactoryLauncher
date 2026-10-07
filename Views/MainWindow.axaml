@@ -6,6 +6,8 @@
         Height="650"
         MinWidth="900"
         MinHeight="550"
+        CanResize="False"
+        ExtendClientAreaToDecorationsHint="False"
         Icon="/Assets/Icons/lightfactory.ico"
         WindowStartupLocation="CenterScreen"
         Background="#101114">
